@@ -46,7 +46,7 @@ def rightclick_callback(caller, event):
     :param event:
     :return:
     """
-    print(caller.GetClassName(), "clicked")
+    # print(caller.GetClassName(), "clicked")
     # Print the interesting stuff.
     pos = caller.GetEventPosition()
 

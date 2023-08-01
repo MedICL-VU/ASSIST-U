@@ -335,7 +335,8 @@ def render(polyData1, polyData2, mask):
 
 def main():
     # hyperparams
-    fov = 30
+    fov = 87//2 # cite boston scientific
+    # fiberoptic flexs 85
     localbending = 90
     globalbending = 120
 
@@ -364,9 +365,9 @@ def main():
 
 def test():
     modeldir = 'data/3dmodels'
-    modelname = 'Patient1_New.stl'
+    modelname = 'Patient3Left.stl'
     keypointPicker.pickkeypoints(modeldir, modelname)
 
 if __name__ == '__main__':
     # slicerViz()
-    test()
+    main()
