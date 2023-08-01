@@ -135,6 +135,7 @@ def load_meshactor(modelpath):
     actor.AddPosition(0, 0, 0)
     return actor
 
+
 def render(actors):
     colors = vtkNamedColors()
     colors.SetColor('100W Tungsten', [255, 214, 170, 255])

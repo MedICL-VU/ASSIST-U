@@ -20,13 +20,13 @@ def draw_pc(source, target, title=''):
     o3d.visualization.draw_geometries([source_temp, target_temp], window_name=title)
 
 
-def get_edges(modelpath):
+def get_edges(modelpath, params):
     # load our stl and convert into triangle mesh for sk
     mesh = trimesh.load(modelpath)
     mesh_o3d = o3d.io.read_triangle_mesh(modelpath)
 
     # according to docs wavefront works for tubular
-    swc = sk.skeletonize.by_wavefront(mesh, step_size=12, waves=2)
+    swc = sk.skeletonize.by_wavefront(mesh, step_size=params['wavesize'], waves=params['wavecount'], progress=False)
     # swc = sk.skeletonize.by_edge_collapse(mesh, shape_weight=0.1, sample_weight=0.01)
     # cont = sk.pre.contract(mesh, iter_lim=100, epsilon=1e-06, SL=3)
     # swc = sk.skeletonize.by_vertex_clusters(mesh, sampling_dist=100)
@@ -44,30 +44,34 @@ def get_edges(modelpath):
         edgelist.append((p1, p0))
     print(f'{len(edgelist)//2} edges')
 
-    # sample between edges
-    skele_points = np.ndarray((0, 3))
-    for edge in swc.edges:
-        # get two points
-        p0 = swc.vertices[edge[0]]
-        p1 = swc.vertices[edge[1]]
-        dist = np.linalg.norm(p0 - p1)
-        num_points = int(np.floor(dist / 0.5))
-        skele_points = np.append(skele_points, np.linspace(p0, p1, num_points), 0)
-    skele_cloud = o3d.geometry.PointCloud()
-    skele_cloud.points = o3d.utility.Vector3dVector(skele_points)
-    draw_pc(skele_cloud, mesh_o3d.sample_points_uniformly(1000), 'test')
+    if params['visualize']:
+        # sample between edges
+        skele_points = np.ndarray((0, 3))
+        for edge in swc.edges:
+            # get two points
+            p0 = swc.vertices[edge[0]]
+            p1 = swc.vertices[edge[1]]
+            dist = np.linalg.norm(p0 - p1)
+            num_points = int(np.floor(dist / 0.5))
+            skele_points = np.append(skele_points, np.linspace(p0, p1, num_points), 0)
+        skele_cloud = o3d.geometry.PointCloud()
+        skele_cloud.points = o3d.utility.Vector3dVector(skele_points)
+        draw_pc(skele_cloud, mesh_o3d.sample_points_uniformly(1000), 'test')
 
     return edgelist
 
-def gen_positions(modelpath, globalbending, localbending):
+def gen_positions(modelpath, params):
+    localbending = params['localbending']
+    globalbending = params['globalbending']
     # gen ccamera points and angles
     modelpath = modelpath
     # ureter_coord = ureterPicker.pickureter(modelpath)
-    ureter_coord = (23.840221383904932, -136.21629019416955, 804.6988184670687)
+    ureter_coord = params['models'][params['modelname']]
+    # ureter_coord = (23.840221383904932, -136.21629019416955, 804.6988184670687)
     print(f'Got ureter coords: {ureter_coord}')
     ureter_coord = np.asarray([ureter_coord])
 
-    edges = get_edges(modelpath)
+    edges = get_edges(modelpath, params)
     edgelist = np.asarray(edges)
 
     # [25.8, -145, 807]
@@ -79,7 +83,7 @@ def gen_positions(modelpath, globalbending, localbending):
     # assumes no loops
     path = organize_paths(start, edgelist, globalbending)
 
-    print(f'Selected {len(path)} edges for pathing')
+    print(f'Selected {len(path)} edges for path gen')
 
     # for each edge traverse forwards and backwards recording views
     positions = []
@@ -104,7 +108,7 @@ def gen_positions(modelpath, globalbending, localbending):
 def organize_paths(start, edges, globalbending):
     path = []
     queue = []
-
+    visited = set()
     # v1, v2 = edges[start]
     # successors = find_successors(v2, edges[:,0,:]) # returns indices
     # for successor in successors:
@@ -112,13 +116,15 @@ def organize_paths(start, edges, globalbending):
     #         queue += successor
     path.append(edges[start])
     queue.append(edges[start])
+    visited.add(start)
     while len(queue) > 0:
         v1, v2 = queue.pop(0)
         successors = find_successors(v2, edges[:, 0, :])  # returns indices
         for successor in successors:
-            if angle(vectorize(v1, v2), vectorize(edges[successor][0], edges[successor][1])) < globalbending:
+            if angle(vectorize(v1, v2), vectorize(edges[successor][0], edges[successor][1])) < globalbending and successor not in visited:
                 path.append(edges[successor])
                 queue.append(edges[successor])
+                visited.add(successor)
     return path
 
 
@@ -146,7 +152,7 @@ def occlusion_check(edge_list):
 
 def sphere_gen(v1,v2, local_bending):
     # points to sample around axis
-    num_points = 25
+    num_points = 10
     ratio = local_bending/180
     sphere_coords = fibonacci_sphere(int(num_points*(1/ratio)))
     unit_center = unit_vector(vectorize(v1,v2))

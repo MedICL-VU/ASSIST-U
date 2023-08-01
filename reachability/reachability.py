@@ -58,30 +58,27 @@ from vtkmodules.vtkFiltersModeling import vtkSelectEnclosedPoints
 from vtkmodules.vtkCommonDataModel import vtkDataObject
 from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 from tqdm import tqdm
-from rendering import keypointPicker
+from rendering import keypointPicker, render
 from reachability import planner
+from util import mathfunctions
 
 
-def gen_cam(position, fov):
+def gen_cam(position, cameradepth, fov):
     coord, focal = position
     cone = vtkConeSource()
-    cone.SetHeight(10.0)
-    # cone.SetRadius(3.0)
+    cone.SetHeight(cameradepth)
     cone.SetAngle(fov)
     cone.SetResolution(10)
+
+    # shift in direction
+    direction = mathfunctions.vectorize(coord, focal)
+    unitdirection = mathfunctions.unit_vector(direction)
+    coord = coord + (unitdirection*(cameradepth/2))
+    focal = focal + (unitdirection*(cameradepth/2))
     cone.SetCenter(coord[0], coord[1], coord[2])
     cone.SetDirection(focal[0], focal[1], focal[2])
     cone.Update()
 
-    # set position
-    # transform = vtkTransform()
-    # transform.Translate(coord[0], coord[1], coord[2])
-    #
-    # transformPD = vtkTransformPolyDataFilter()
-    # transformPD.SetTransform(transform)
-    # transformPD.SetInputData(cone.GetOutput())
-    # transformPD.Update()
-    # conedata = transformPD.GetOutput()
     return cone.GetOutput()
 
 def boolean_polydata(mask1, mask2, operation):
@@ -138,6 +135,23 @@ def mark_intersection(polyData1, polyData2):
 
     select.Update()
     return select.GetOutput()
+
+def predict_reachability(modelpath, params):
+    collectingsystem = render.load_mesh(modelpath)
+
+    # generate camera positions
+    positions = planner.gen_positions(modelpath, params)
+    mask = None
+    lastcam = None
+    count = 0
+    # pbar = tqdm(positions)
+    for position in positions:
+        # if count>=1:break
+        fakecam = gen_cam(position,params['cameradepth'], params['fov'])
+        newmask = mark_intersection(collectingsystem, fakecam)
+        mask = update_masks(mask, newmask)
+        lastcam = fakecam
+    return collectingsystem, mask, lastcam
 
 def render_reachable(polyData1, polyData2, mask):
     # Extract three meshes, one completely inside, one completely
@@ -248,4 +262,4 @@ def render_reachable(polyData1, polyData2, mask):
     renderWindow.Render()
 
     renderWindowInteractor.Start()
-    return [], [], []
+    return

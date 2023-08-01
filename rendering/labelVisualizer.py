@@ -64,21 +64,25 @@ from reachability import planner, reachability
 
 from rendering.render import load_meshactor, render
 
-def create_label(coordinates):
+def create_label(coordinates, radius):
     sphere = vtkSphereSource()
     sphere.SetPhiResolution(10)
     sphere.SetThetaResolution(10)
-    sphere.SetRadius(1.0)
+    sphere.SetRadius(radius)
     sphere.SetCenter(coordinates[0], coordinates[1], coordinates[2])
+    sphere.Update()
+    return sphere.GetOutput()
+
+def create_labelactor(coordinates, radius=1.0):
     mapper = vtkPolyDataMapper()
-    mapper.SetInputConnection(sphere.GetOutputPort())
+    mapper.SetInputDataObject(create_label(coordinates, radius))
     actor = vtkActor()
     actor.SetMapper(mapper)
     colors = vtkNamedColors()
     actor.GetProperty().SetColor(colors.GetColor3d("Red"))
     return actor
 
-def load_labels(fname):
+def load_labels(fname, radius=1.0):
     with open(fname, 'r') as f:
         coords=[]
         for line in f:
@@ -87,19 +91,29 @@ def load_labels(fname):
             coords.append(coord)
     contents = []
     for coord in coords:
-        contents.append(create_label(coord))
+        contents.append(create_label(coord, radius))
+    return contents
 
+def load_labelactors(fname, radius=1.0):
+    with open(fname, 'r') as f:
+        coords=[]
+        for line in f:
+
+            coord = [float(x) for x in line.rstrip().split(', ')]
+            coords.append(coord)
+    contents = []
+    for coord in coords:
+        contents.append(create_labelactor(coord, radius))
     return contents
 
 def visualize_labels(modelname):
     modelpath = os.path.join('data', '3dmodels', modelname+'.stl')
     labelpath = os.path.join('data', 'labels', modelname + '.txt')
     model = load_meshactor(modelpath)
-    labels = load_labels(labelpath)
+    labels = load_labelactors(labelpath, 1.0)
     render([model]+ labels)
-
 
 
 if __name__ == "__main__":
     modelnames = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
-    visualize_labels(modelnames[1])
+    visualize_labels(modelnames[2])
