@@ -23,19 +23,21 @@ def gen_labeledmodel(model, labels):
         # if count>=1:break
         newmask = reachability.mark_intersection(model, label)
         mask = reachability.update_masks(mask, newmask)
-    mask = invertmask(mask)
+    # mask = invertmask(mask)
     return mask
 
 
-def compare(mask1, mask2):
-    try:
-        array1 = vtk_to_numpy(mask1.GetPointData().GetAbstractArray('SelectedPoints'))
-        array2 = vtk_to_numpy(mask2.GetPointData().GetAbstractArray('SelectedPoints'))
-        iou = metrics.iou(array1, array2)
-        dsc = metrics.dice(array1, array2)
-        return iou, dsc
-    except:
+def compare(mask1, mask2):  # assumes labels are in 1 as unreachable and predict is opposite
+    if mask1 is None or mask2 is None:
         return 0,0
+    mask1 = invertmask(mask1) # treat labels as negative. Better looking numbers
+    # mask2 = invertmask(mask2)  # treat labels as positive. Use to optimize unreachable points
+    array1 = vtk_to_numpy(mask1.GetPointData().GetAbstractArray('SelectedPoints'))
+    array2 = vtk_to_numpy(mask2.GetPointData().GetAbstractArray('SelectedPoints'))
+    iou = metrics.iou(array1, array2)
+    dsc = metrics.dice(array1, array2)
+    return iou, dsc
+
 
 def analysis(params):
     # expects polydata objects
@@ -45,8 +47,7 @@ def analysis(params):
     labels = labelVisualizer.load_labels(labelpath, 3.0)
     labelmask = gen_labeledmodel(model, labels)
     _, predictmask, lastcam = reachability.predict_reachability(modelpath, params)
-    # predictmask = invertmask(predictmask)
-    iou, dsc = compare(labelmask, predictmask)
+    iou, dsc = compare(labelmask, predictmask) # assumes labels are in 1 as unreachable and predict is opposite
     if params['visualize']:
         reachability.render_reachable(model, labelmask, labelmask)
         reachability.render_reachable(model, labelmask, predictmask)
