@@ -42,7 +42,7 @@ def get_edges(modelpath, params):
         p1 = swc.vertices[edge[1]]
         edgelist.append((p0,p1))
         edgelist.append((p1, p0))
-    print(f'{len(edgelist)//2} edges')
+    # print(f'{len(edgelist)//2} edges')
 
     if params['visualize']:
         # sample between edges
@@ -68,7 +68,7 @@ def gen_positions(modelpath, params):
     # ureter_coord = ureterPicker.pickureter(modelpath)
     ureter_coord = params['models'][params['modelname']]
     # ureter_coord = (23.840221383904932, -136.21629019416955, 804.6988184670687)
-    print(f'Got ureter coords: {ureter_coord}')
+    # print(f'Got ureter coords: {ureter_coord}')
     ureter_coord = np.asarray([ureter_coord])
 
     edges = get_edges(modelpath, params)
@@ -83,7 +83,7 @@ def gen_positions(modelpath, params):
     # assumes no loops
     path = organize_paths(start, edgelist, globalbending)
 
-    print(f'Selected {len(path)} edges for path gen')
+    # print(f'Selected {len(path)} edges for path gen')
 
     # for each edge traverse forwards and backwards recording views
     positions = []

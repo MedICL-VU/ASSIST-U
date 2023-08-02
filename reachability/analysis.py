@@ -28,20 +28,24 @@ def gen_labeledmodel(model, labels):
 
 
 def compare(mask1, mask2):
-    array1 = vtk_to_numpy(mask1.GetPointData().GetAbstractArray('SelectedPoints'))
-    array2 = vtk_to_numpy(mask2.GetPointData().GetAbstractArray('SelectedPoints'))
-    iou = metrics.iou(array1, array2)
-    dsc = metrics.dice(array1, array2)
-    return iou, dsc
+    try:
+        array1 = vtk_to_numpy(mask1.GetPointData().GetAbstractArray('SelectedPoints'))
+        array2 = vtk_to_numpy(mask2.GetPointData().GetAbstractArray('SelectedPoints'))
+        iou = metrics.iou(array1, array2)
+        dsc = metrics.dice(array1, array2)
+        return iou, dsc
+    except:
+        return 0,0
 
 def analysis(params):
     # expects polydata objects
     modelpath = os.path.join('data', '3dmodels', params['modelname'] + '.stl')
     labelpath = os.path.join('data', 'labels', params['modelname'] + '.txt')
     model = render.load_mesh(modelpath)
-    labels = labelVisualizer.load_labels(labelpath, 2.0)
+    labels = labelVisualizer.load_labels(labelpath, 3.0)
     labelmask = gen_labeledmodel(model, labels)
     _, predictmask, lastcam = reachability.predict_reachability(modelpath, params)
+    # predictmask = invertmask(predictmask)
     iou, dsc = compare(labelmask, predictmask)
     if params['visualize']:
         reachability.render_reachable(model, labelmask, labelmask)
