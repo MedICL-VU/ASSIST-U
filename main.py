@@ -147,9 +147,9 @@ if __name__ == '__main__':
         'fov': 87 // 2,  # cite boston scientific -- fiberoptic flexs 85
         'localbending': 25,
         'globalbending': 120,
-        'wavesize': 10,
-        'wavecount': 2,
-        'visualize': False,
+        'wavesize': 8,
+        'wavecount': 1,
+        'visualize': True,
         'modelname': 'collectingsystem2',
         'models': {'collectingsystem2': (-41.4481495420699, 19.731541937774082, -97.36807944184557),
                    'manualsegmentation1': (-45.75806986508405, 123.49623714056546, 1132.751798267298),
@@ -162,4 +162,6 @@ if __name__ == '__main__':
     # analyze(params)
     # proto(params)
     # label_viz(params)
-    multiparamsearch(params)
+    # multiparamsearch(params)
+    modelnames = ['collectingsystem2.stl', 'manualsegmentation1.stl', 'Patient1Right.stl', 'Patient3Left.stl']
+    keypointPicker.pickkeypoints('data/3dmodels',modelnames[3])
