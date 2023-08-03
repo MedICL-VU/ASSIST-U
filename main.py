@@ -23,44 +23,6 @@ def test(params):
     modelname = 'Patient1Right.stl'
     keypointPicker.pickkeypoints(modeldir, modelname)
 
-def paramsearch(params):
-    modelnames = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
-    # labelVisualizer.visualize_labels(modelnames[1])
-
-    wavesteps = [10,11,12,13,14]
-    wavecount = [1,2,3]
-    bestiou = 0
-    ioustep = 0
-    ioucount = 0
-
-    bestdsc = 0
-    dscstep = 0
-    dsccount = 0
-    with tqdm(total=len(wavesteps)*len(wavecount)) as pbar:
-        for step in wavesteps:
-            params['wavesize'] = step
-            for count in wavecount:
-                params['wavecount'] = count
-
-                # iou, dsc = analysis.analysis(modelnames[1], params)
-                iou, dsc = analyze()
-
-                if iou > bestiou:
-                    bestiou = iou
-                    ioustep = step
-                    ioucount = count
-                if dsc > bestdsc:
-                    bestdsc = dsc
-                    dscstep = step
-                    dsccount = count
-                pbar.update(1)
-    print(f'BESTIOU: {bestiou}')
-    print(f'Step size: {ioustep}')
-    print(f'Count: {ioucount}')
-    print(f'BESTDSC: {bestdsc}')
-    print(f'Step size: {dscstep}')
-    print(f'Count: {dsccount}')
-
 def analyze(params):
     modelnames = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
 
@@ -76,8 +38,8 @@ def analyze(params):
     avgiou = totaliou/len(modelnames)
     avgdsc =totaldsc/len(modelnames)
 
-    # print(f'AVG IOU: {avgiou}')
-    # print(f'AVG DSC: {avgdsc}')
+    print(f'AVG IOU: {avgiou}')
+    print(f'AVG DSC: {avgdsc}')
     return avgiou, avgdsc, params
 
 def proto(params):
@@ -98,7 +60,6 @@ def multiparamsearch(params):
     print(f'Available processes {cpucount}')
     print(f'Using {cpucount -1}')
 
-    p = Pool(cpucount - 1)
 
     # construct params
     wavesteps = [5,6,7,8,9,10]
@@ -106,49 +67,51 @@ def multiparamsearch(params):
 
     work = []
 
-    for step in wavesteps:
+    # for step in wavesteps:
+    #     params['wavesize'] = step
+    #     for count in wavecount:
+    #         params['wavecount'] = count
+    #         work.append(copy.deepcopy(params))
+    for step in range(1,10):
         params['wavesize'] = step
-        for count in wavecount:
+        for count in range(1,5):
             params['wavecount'] = count
-            work.append(copy.deepcopy(params))
-
-    results = p.map(analyze, work)
+            for depth in range(1,20):
+                params['cameradepth'] = depth
+                work.append(copy.deepcopy(params))
+    p = Pool(cpucount - 1)
+    results = p.imap(analyze, work)
 
     # search results
     bestiou = 0
-    ioustep = 0
-    ioucount = 0
+    iouparam = None
 
     bestdsc = 0
-    dscstep = 0
-    dsccount = 0
+    dscparam = None
     for iou, dsc, param in results:
         if iou > bestiou:
             bestiou = iou
-            ioustep = param['wavesize']
-            ioucount = param['wavecount']
+            iouparam = param
         if dsc > bestdsc:
             bestdsc = dsc
-            dscstep = param['wavesize']
-            dsccount = param['wavecount']
+            dscparam = param
 
     # search results
 
     print(f'BESTIOU: {bestiou}')
-    print(f'Step size: {ioustep}')
-    print(f'Count: {ioucount}')
+    print(f'Param: {iouparam}')
+
     print(f'BESTDSC: {bestdsc}')
-    print(f'Step size: {dscstep}')
-    print(f'Count: {dsccount}')
+    print(f'Param: {dscparam}')
 
 if __name__ == '__main__':
     params = {
-        'cameradepth': 10.0,
+        'cameradepth': 14.0,
         'fov': 87 // 2,  # cite boston scientific -- fiberoptic flexs 85
         'localbending': 25,
         'globalbending': 120,
-        'wavesize': 8,
-        'wavecount': 1,
+        'wavesize': 9,
+        'wavecount': 3,
         'visualize': True,
         'modelname': 'collectingsystem2',
         'models': {'collectingsystem2': (-41.4481495420699, 19.731541937774082, -97.36807944184557),
@@ -158,10 +121,7 @@ if __name__ == '__main__':
     }
 
     # main(params)
-    # paramsearch(params)
-    # analyze(params)
+    analyze(params)
     # proto(params)
     # label_viz(params)
     # multiparamsearch(params)
-    modelnames = ['collectingsystem2.stl', 'manualsegmentation1.stl', 'Patient1Right.stl', 'Patient3Left.stl']
-    keypointPicker.pickkeypoints('data/3dmodels',modelnames[3])

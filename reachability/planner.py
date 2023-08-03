@@ -121,7 +121,9 @@ def organize_paths(start, edges, globalbending):
         v1, v2 = queue.pop(0)
         successors = find_successors(v2, edges[:, 0, :])  # returns indices
         for successor in successors:
-            if angle(vectorize(v1, v2), vectorize(edges[successor][0], edges[successor][1])) < globalbending and successor not in visited:
+            successor_vector = vectorize(edges[successor][0], edges[successor][1])
+            if not np.linalg.norm(successor_vector) < 0.0000005 and angle(vectorize(v1, v2), successor_vector) < globalbending and successor not in visited:
+                # if not length 0, angle is valid, and not seen before
                 path.append(edges[successor])
                 queue.append(edges[successor])
                 visited.add(successor)
