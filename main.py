@@ -7,25 +7,51 @@ import copy
 
 
 def main(params):
-
-    modeldir = 'data/3dmodels'
-    modelname = 'manualsegmentation1.stl'
-
+    modelnames = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
     params['modelname'] = 'manualsegmentation1'
     collectingsystem, mask, lastcam = reachability.predict_reachability('data/3dmodels/manualsegmentation1.stl', params)
-
 
     reachability.render_reachable(collectingsystem, lastcam, mask)
 
 
+def render_skeleton_camera(params):
+    params['modelname'] = 'Patient1Right'
+    collectingsystem, mask, lastcam, positions = reachability.predict_reachability(
+        'data/3dmodels/Patient1Right.stl', params)
+    pointactors = []
+    for position in positions:
+
+        coord, focal = position
+    # coord = coord - ((0.5 * params['cameradepth']) * focal)
+    # focal = -1* focal
+        pointactors.append(labelVisualizer.create_labelactor(coord, 0.25, 'Red'))
+    # pointactors.append(labelVisualizer.create_labelactor(coord+(focal*params['cameradepth']), 1, 'Blue'))
+
+    render.render2(collectingsystem, lastcam, mask, pointactors)
+
+def render_points_camera(params):
+    params['modelname'] = 'Patient1Right'
+    collectingsystem, mask, lastcam, position = reachability.predict_reachability(
+        'data/3dmodels/Patient1Right.stl', params)
+    pointactors = []
+
+    coord, focal = position
+    # coord = coord - ((0.5 * params['cameradepth']) * focal)
+    # focal = -1* focal
+    pointactors.append(labelVisualizer.create_labelactor(coord, 1, 'Blue'))
+    # pointactors.append(labelVisualizer.create_labelactor(coord+(focal*params['cameradepth']), 1, 'Blue'))
+
+
+    render.render2(collectingsystem, lastcam, mask, pointactors)
+
 def test(params):
     modeldir = 'data/3dmodels'
-    modelname = 'Patient1Right.stl'
+    modelname = 'Patient3Left.stl'
     keypointPicker.pickkeypoints(modeldir, modelname)
 
 def analyze(params):
-    modelnames = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
-
+    # modelnames = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
+    modelnames = ['Patient1Right']
     totaliou = 0.0
     totaldsc = 0.0
     for name in modelnames:
@@ -38,8 +64,8 @@ def analyze(params):
     avgiou = totaliou/len(modelnames)
     avgdsc =totaldsc/len(modelnames)
 
-    print(f'AVG IOU: {avgiou}')
-    print(f'AVG DSC: {avgdsc}')
+    # print(f'AVG IOU: {avgiou}')
+    # print(f'AVG DSC: {avgdsc}')
     return avgiou, avgdsc, params
 
 def proto(params):
@@ -72,13 +98,13 @@ def multiparamsearch(params):
     #     for count in wavecount:
     #         params['wavecount'] = count
     #         work.append(copy.deepcopy(params))
-    for step in range(1,10):
+    for step in range(1,15):
         params['wavesize'] = step
         for count in range(1,5):
             params['wavecount'] = count
-            for depth in range(1,20):
-                params['cameradepth'] = depth
-                work.append(copy.deepcopy(params))
+            # for depth in range(1,20):
+            #     params['cameradepth'] = depth
+            work.append(copy.deepcopy(params))
     p = Pool(cpucount - 1)
     results = p.imap(analyze, work)
 
@@ -106,22 +132,26 @@ def multiparamsearch(params):
 
 if __name__ == '__main__':
     params = {
-        'cameradepth': 14.0,
-        'fov': 87 // 2,  # cite boston scientific -- fiberoptic flexs 85
-        'localbending': 25,
-        'globalbending': 120,
-        'wavesize': 9,
-        'wavecount': 3,
-        'visualize': True,
+        'cameradepth': 7.0,
+        'fov': 87 // 2,  # boston scientific -- digital ==87 -- fiberoptic flexs== 85
+        'localbending': 90, # will be a higher number for fiber optic
+        'globalbending': 150,
+        'wavesize': 5,
+        'wavecount': 1,
+        'visualize': False,
         'modelname': 'collectingsystem2',
-        'models': {'collectingsystem2': (-41.4481495420699, 19.731541937774082, -97.36807944184557),
-                   'manualsegmentation1': (-45.75806986508405, 123.49623714056546, 1132.751798267298),
-                   'Patient1Right': (23.350248181136337, -137.49344143532295, 803.300038855812),
-                   'Patient3Left': (-52.889510869031284, -169.82580547336187, -442.6200299143518)}
+        'models': {'collectingsystem2': (-41.0082, 19.8301, -96.8928),
+                   'manualsegmentation1': (-45.649, 124.412, 1132.38),
+                   'Patient1Right': (24.0183, -135.715, 803.426),
+                   'Patient3Left': (-51.8847, -169.306, -443.374)}
     }
 
     # main(params)
-    analyze(params)
+    # render_points_camera(params)
+    render_skeleton_camera(params)
+    # print(analyze(params))
     # proto(params)
     # label_viz(params)
     # multiparamsearch(params)
+
+    # test(params)

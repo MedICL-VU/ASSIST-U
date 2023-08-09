@@ -19,6 +19,12 @@ def draw_pc(source, target, title=''):
     target_temp.paint_uniform_color([0.812, 0.682, 0.439])
     o3d.visualization.draw_geometries([source_temp, target_temp], window_name=title)
 
+def find_origin(mesh, input):
+    #find neares input vertex in trimesh
+    # return index
+    return mesh.nearest.vertex(input)[1]
+
+
 
 def get_edges(modelpath, params):
     # load our stl and convert into triangle mesh for sk
@@ -26,7 +32,11 @@ def get_edges(modelpath, params):
     mesh_o3d = o3d.io.read_triangle_mesh(modelpath)
 
     # according to docs wavefront works for tubular
-    swc = sk.skeletonize.by_wavefront(mesh, step_size=params['wavesize'], waves=params['wavecount'], progress=False)
+    swc = sk.skeletonize.by_wavefront(mesh, step_size=params['wavesize'],
+                                      waves=params['wavecount'],
+                                      origins=find_origin(mesh, params['models'][params['modelname']]),
+                                      radius_agg='percentile75',
+                                      progress=False)
     # swc = sk.skeletonize.by_edge_collapse(mesh, shape_weight=0.1, sample_weight=0.01)
     # cont = sk.pre.contract(mesh, iter_lim=100, epsilon=1e-06, SL=3)
     # swc = sk.skeletonize.by_vertex_clusters(mesh, sampling_dist=100)
@@ -56,7 +66,7 @@ def get_edges(modelpath, params):
             skele_points = np.append(skele_points, np.linspace(p0, p1, num_points), 0)
         skele_cloud = o3d.geometry.PointCloud()
         skele_cloud.points = o3d.utility.Vector3dVector(skele_points)
-        draw_pc(skele_cloud, mesh_o3d.sample_points_uniformly(1000), 'test')
+        draw_pc(skele_cloud, mesh_o3d.sample_points_uniformly(1000), 'skeleton')
 
     return edgelist
 
@@ -85,7 +95,7 @@ def gen_positions(modelpath, params):
 
     # print(f'Selected {len(path)} edges for path gen')
 
-    # for each edge traverse forwards and backwards recording views
+    # for each edge traverse forwards recording views
     positions = []
     for edge in path:
         v1, v2 = edge
@@ -99,7 +109,7 @@ def gen_positions(modelpath, params):
         for i in range(0, len(track)-1):
             coords = sphere_gen(v1, v2, localbending)
             for j in range(len(coords)):
-                positions.append((track[i], coords[j]))  # coord, focalpoint (nextpoint)
+                positions.append((track[i], coords[j]))  # coord, focalpoint (unit direction)
 
             # generate sample points up to localbending degrees off the v1->v2 vector
 
@@ -126,7 +136,7 @@ def organize_paths(start, edges, globalbending):
                 # if not length 0, angle is valid, and not seen before
                 path.append(edges[successor])
                 queue.append(edges[successor])
-                visited.add(successor)
+            visited.add(successor)
     return path
 
 
@@ -159,7 +169,7 @@ def sphere_gen(v1,v2, local_bending):
     sphere_coords = fibonacci_sphere(int(num_points*(1/ratio)))
     unit_center = unit_vector(vectorize(v1,v2))
     angles = angle_matrix(unit_center, sphere_coords)
-    return sphere_coords[angles<local_bending]*vectorize(v1,v2)
+    return sphere_coords[angles<local_bending] #*vectorize(v1,v2)
 
 def fibonacci_sphere(samples):
     # https://gist.github.com/Seanmatthews/a51ac697db1a4f58a6bca7996d75f68c
