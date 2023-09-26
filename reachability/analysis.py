@@ -30,12 +30,24 @@ def gen_labeledmodel(model, labels):
 def compare(mask1, mask2):  # assumes labels are in 1 as unreachable and predict is opposite
     if mask1 is None or mask2 is None:
         return 0,0
+
+    # calculate for reachable class
     mask1 = invertmask(mask1) # treat labels as negative. Better looking numbers
     # mask2 = invertmask(mask2)  # treat labels as positive. Use to optimize unreachable points
     array1 = vtk_to_numpy(mask1.GetPointData().GetAbstractArray('SelectedPoints'))
     array2 = vtk_to_numpy(mask2.GetPointData().GetAbstractArray('SelectedPoints'))
     iou = metrics.iou(array1, array2)
     dsc = metrics.dice(array1, array2)
+
+    # # calculate for unreachable class
+    # mask1 = invertmask(mask1)
+    # mask2 = invertmask(mask2)
+    # array1 = vtk_to_numpy(mask1.GetPointData().GetAbstractArray('SelectedPoints'))
+    # array2 = vtk_to_numpy(mask2.GetPointData().GetAbstractArray('SelectedPoints'))
+    # iou += metrics.iou(array1, array2)
+    # dsc += metrics.dice(array1, array2)
+    # return iou/2.0, dsc/2.0
+
     return iou, dsc
 
 

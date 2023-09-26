@@ -1,12 +1,22 @@
 import os
 from tqdm import tqdm
-from rendering import keypointPicker, render, labelVisualizer
+from rendering import keypointPicker, render, labelVisualizer, renderVideo
 from reachability import planner, reachability, analysis
 from multiprocessing import Pool
 import copy
 
 
 def main(params):
+    '''
+    DEPRECATED
+    Parameters
+    ----------
+    params
+
+    Returns
+    -------
+
+    '''
 
     modeldir = 'data/3dmodels'
     modelname = 'manualsegmentation1.stl'
@@ -36,10 +46,8 @@ def analyze(params):
         # print(f'iou: {iou}')
         # print(f'dsc: {dsc}')
     avgiou = totaliou/len(modelnames)
-    avgdsc =totaldsc/len(modelnames)
+    avgdsc = totaldsc/len(modelnames)
 
-    print(f'AVG IOU: {avgiou}')
-    print(f'AVG DSC: {avgdsc}')
     return avgiou, avgdsc, params
 
 def proto(params):
@@ -104,16 +112,30 @@ def multiparamsearch(params):
     print(f'BESTDSC: {bestdsc}')
     print(f'Param: {dscparam}')
 
+def video_render(params):
+
+    # saves a ton of images for visualization
+    for name in ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']:
+        params['modelname'] = name
+        modelpath = os.path.join('data', '3dmodels', params['modelname'] + '.stl')
+        renderVideo.render(modelpath, params)
+
+
 if __name__ == '__main__':
     params = {
         'cameradepth': 14.0,
         'fov': 87 // 2,  # cite boston scientific -- fiberoptic flexs 85
-        'localbending': 25,
-        'globalbending': 120,
-        'wavesize': 9,
-        'wavecount': 3,
-        'visualize': True,
-        'modelname': 'collectingsystem2',
+        'localbending': 30,
+        'globalbending': 150,
+        'wavesize': 10,
+        'wavecount': 2,
+        'numpoints': 1, # how many camera points to sample
+        'samplestep': 0.5,
+        'visualize': False,
+        'savedir': 'output_unfiltered',
+        'save': False,
+        'planmode': 'unfiltered', # bfs, dfs
+        'modelname': 'Patient1Right',
         'models': {'collectingsystem2': (-41.4481495420699, 19.731541937774082, -97.36807944184557),
                    'manualsegmentation1': (-45.75806986508405, 123.49623714056546, 1132.751798267298),
                    'Patient1Right': (23.350248181136337, -137.49344143532295, 803.300038855812),
@@ -121,7 +143,10 @@ if __name__ == '__main__':
     }
 
     # main(params)
-    analyze(params)
+    # avgiou, avgdsc, _ = analyze(params)
+    # print(f'AVG IOU: {avgiou}')
+    # print(f'AVG DSC: {avgdsc}')
     # proto(params)
     # label_viz(params)
     # multiparamsearch(params)
+    video_render(params)

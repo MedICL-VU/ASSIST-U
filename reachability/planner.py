@@ -81,7 +81,7 @@ def gen_positions(modelpath, params):
 
     # bfs edge paths and place in order
     # assumes no loops
-    path = organize_paths(start, edgelist, globalbending)
+    path = organize_paths(start, edgelist, globalbending, params['planmode'])
 
     # print(f'Selected {len(path)} edges for path gen')
 
@@ -92,12 +92,12 @@ def gen_positions(modelpath, params):
 
         #sample points along edge
         dist = np.linalg.norm(v1 - v2)
-        num_points = int(np.floor(dist / 0.5))
+        num_points = int(np.floor(dist / params['samplestep']))
         track = np.linspace(v1, v2, num_points)
 
         # forward view
         for i in range(0, len(track)-1):
-            coords = sphere_gen(v1, v2, localbending)
+            coords = sphere_gen(v1, v2, localbending, params['numpoints'])
             for j in range(len(coords)):
                 positions.append((track[i], coords[j]))  # coord, focalpoint (nextpoint)
 
@@ -105,7 +105,8 @@ def gen_positions(modelpath, params):
 
     return positions
 
-def organize_paths(start, edges, globalbending):
+
+def organize_paths(start, edges, globalbending, mode):
     path = []
     queue = []
     visited = set()
@@ -122,11 +123,20 @@ def organize_paths(start, edges, globalbending):
         successors = find_successors(v2, edges[:, 0, :])  # returns indices
         for successor in successors:
             successor_vector = vectorize(edges[successor][0], edges[successor][1])
-            if not np.linalg.norm(successor_vector) < 0.0000005 and angle(vectorize(v1, v2), successor_vector) < globalbending and successor not in visited:
-                # if not length 0, angle is valid, and not seen before
-                path.append(edges[successor])
-                queue.append(edges[successor])
-                visited.add(successor)
+            if mode == 'bfs':
+                if not np.linalg.norm(successor_vector) < 0.0000005 and angle(vectorize(v1, v2), successor_vector) < globalbending and successor not in visited:
+                    # if not length 0, angle is valid, and not seen before
+                    path.append(edges[successor])
+                    queue.append(edges[successor])
+                    visited.add(successor)
+            elif mode == 'unfiltered':
+                if successor not in visited:
+                    # if not length 0, angle is valid, and not seen before
+                    path.append(edges[successor])
+                    queue.append(edges[successor])
+                    visited.add(successor)
+            else:
+                pass
     return path
 
 
@@ -152,9 +162,9 @@ def occlusion_check(edge_list):
 #
 #     return angles
 
-def sphere_gen(v1,v2, local_bending):
+def sphere_gen(v1,v2, local_bending, points):
     # points to sample around axis
-    num_points = 10
+    num_points = points
     ratio = local_bending/180
     sphere_coords = fibonacci_sphere(int(num_points*(1/ratio)))
     unit_center = unit_vector(vectorize(v1,v2))
