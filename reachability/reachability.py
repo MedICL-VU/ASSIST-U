@@ -64,19 +64,18 @@ from util import mathfunctions
 
 
 def gen_cam(position, cameradepth, fov):
-    coord, focal = position
+    coord, focaldirection = position
     cone = vtkConeSource()
     cone.SetHeight(cameradepth)
     cone.SetAngle(fov)
     cone.SetResolution(10)
 
-    # shift in direction
-    direction = mathfunctions.vectorize(coord, focal)
-    unitdirection = mathfunctions.unit_vector(direction)
-    coord = coord + (unitdirection*(cameradepth/2))
-    focal = focal + (unitdirection*(cameradepth/2))
+    # shift in direction. Center of a cone is 0.5 of the way down the centerline, doesn't seem to be geometric center
+    # direction = mathfunctions.vectorize(coord, focal)
+    # unitdirection = mathfunctions.unit_vector(direction)
+    coord = coord + ((0.5*cameradepth)*focaldirection)
     cone.SetCenter(coord[0], coord[1], coord[2])
-    cone.SetDirection(focal[0], focal[1], focal[2])
+    cone.SetDirection(-focaldirection[0], -focaldirection[1], -focaldirection[2])
     cone.Update()
 
     return cone.GetOutput()
@@ -141,17 +140,29 @@ def predict_reachability(modelpath, params):
 
     # generate camera positions
     positions = planner.gen_positions(modelpath, params)
+
+    if params['visualize']:
+        # sample between edges
+        skele_points = np.ndarray((0, 3))
+        for coord, _ in positions:
+            skele_points = np.append(skele_points, [coord], 0)
+        skele_cloud = o3d.geometry.PointCloud()
+        skele_cloud.points = o3d.utility.Vector3dVector(skele_points)
+        mesh_o3d = o3d.io.read_triangle_mesh(modelpath)
+        planner.draw_pc(skele_cloud, mesh_o3d.sample_points_uniformly(1000), 'selected points')
+
     mask = None
     lastcam = None
     count = 0
     # pbar = tqdm(positions)
     for position in positions:
-        # if count>=1:break
         fakecam = gen_cam(position,params['cameradepth'], params['fov'])
         newmask = mark_intersection(collectingsystem, fakecam)
         mask = update_masks(mask, newmask)
         lastcam = fakecam
-    return collectingsystem, mask, lastcam
+        count +=1
+        if count >= 10: return collectingsystem, mask, lastcam, positions
+    return collectingsystem, mask, lastcam , positions
 
 def render_reachable(polyData1, polyData2, mask):
     # Extract three meshes, one completely inside, one completely
@@ -229,7 +240,7 @@ def render_reachable(polyData1, polyData2, mask):
     borderActor.GetProperty().EdgeVisibilityOn()
 
     surfaceMapper = vtkDataSetMapper()
-    surfaceMapper.SetInputData(polyData2) #HERERERERE
+    surfaceMapper.SetInputData(polyData1) #HERE
     surfaceMapper.ScalarVisibilityOff()
 
     # Surface of object containing cell

@@ -177,3 +177,123 @@ def render(actors):
     renderWindow.Render()
     renderWindowInteractor.Initialize()
     renderWindowInteractor.Start()
+
+def render2(polyData1, polyData2, mask, actors):
+    # Extract three meshes, one completely inside, one completely
+    # outside and on the border between the inside and outside.
+
+    threshold = vtkMultiThreshold()
+    # Outside points have a 0 value in ALL points of a cell
+    outsideId = threshold.AddBandpassIntervalSet(
+        0, 0,
+        vtkDataObject.FIELD_ASSOCIATION_POINTS, 'SelectedPoints',
+        0, 1)
+    # Inside points have a 1 value in ALL points of a cell
+    insideId = threshold.AddBandpassIntervalSet(
+        1, 1,
+        vtkDataObject.FIELD_ASSOCIATION_POINTS, 'SelectedPoints',
+        0, 1)
+    # Border points have a 0 or a 1 in at least one point of a cell
+    borderId = threshold.AddIntervalSet(
+        0, 1,
+        vtkMultiThreshold.OPEN, vtkMultiThreshold.OPEN,
+        vtkDataObject.FIELD_ASSOCIATION_POINTS, 'SelectedPoints',
+        0, 0)
+
+    # threshold.SetInputConnection(mask.GetOutputPort())
+
+    threshold.SetInputData(mask)
+
+    # Select the intervals to be output
+    threshold.OutputSet(outsideId)
+    threshold.OutputSet(insideId)
+    threshold.OutputSet(borderId)
+    threshold.Update()
+
+    # Visualize
+    colors = vtkNamedColors()
+    outsideColor = colors.GetColor3d('Grey')
+    insideColor = colors.GetColor3d('Grey')
+    borderColor = colors.GetColor3d('Grey')
+    surfaceColor = colors.GetColor3d('Peacock')
+    backgroundColor = colors.GetColor3d('Silver')
+
+    # Outside
+    outsideMapper = vtkDataSetMapper()
+    outsideMapper.SetInputData(threshold.GetOutput().GetBlock(outsideId).GetBlock(0))
+    outsideMapper.ScalarVisibilityOff()
+
+    outsideActor = vtkActor()
+    outsideActor.SetMapper(outsideMapper)
+    outsideActor.GetProperty().SetDiffuseColor(outsideColor)
+    outsideActor.GetProperty().SetOpacity(.5)
+    outsideActor.GetProperty().SetSpecular(.6)
+    outsideActor.GetProperty().SetSpecularPower(30)
+    # outsideActor.GetProperty().SetRepresentationToWireframe()
+
+    # Inside
+    insideMapper = vtkDataSetMapper()
+    insideMapper.SetInputData(threshold.GetOutput().GetBlock(insideId).GetBlock(0))
+    insideMapper.ScalarVisibilityOff()
+
+    insideActor = vtkActor()
+    insideActor.SetMapper(insideMapper)
+    insideActor.GetProperty().SetDiffuseColor(insideColor)
+    insideActor.GetProperty().SetOpacity(.5)
+    insideActor.GetProperty().SetSpecular(.6)
+    insideActor.GetProperty().SetSpecularPower(30)
+    # insideActor.GetProperty().EdgeVisibilityOn()
+    # insideActor.GetProperty().SetRepresentationToWireframe()
+
+    # Border
+    borderMapper = vtkDataSetMapper()
+    borderMapper.SetInputData(threshold.GetOutput().GetBlock(borderId).GetBlock(0))
+    borderMapper.ScalarVisibilityOff()
+
+    borderActor = vtkActor()
+    borderActor.SetMapper(borderMapper)
+    borderActor.GetProperty().SetDiffuseColor(borderColor)
+    borderActor.GetProperty().SetOpacity(.5)
+    borderActor.GetProperty().SetSpecular(.6)
+    borderActor.GetProperty().SetSpecularPower(30)
+    # borderActor.GetProperty().EdgeVisibilityOn()
+    # borderActor.GetProperty().SetRepresentationToWireframe()
+
+    surfaceMapper = vtkDataSetMapper()
+    surfaceMapper.SetInputData(polyData2)  # HERERERERE
+    surfaceMapper.ScalarVisibilityOff()
+
+    # Surface of object containing cell
+    surfaceActor = vtkActor()
+    surfaceActor.SetMapper(surfaceMapper)
+    surfaceActor.GetProperty().SetDiffuseColor(surfaceColor)
+    surfaceActor.GetProperty().SetOpacity(.5)
+    # surfaceActor.GetProperty().EdgeVisibilityOn()
+
+    renderer = vtkRenderer()
+    renderWindow = vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
+    renderWindow.SetSize(640, 480)
+
+    renderWindowInteractor = vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+
+    renderer.SetBackground(backgroundColor)
+    renderer.UseHiddenLineRemovalOn()
+
+    renderer.AddActor(surfaceActor)
+    renderer.AddActor(outsideActor)
+    renderer.AddActor(insideActor)
+    renderer.AddActor(borderActor)
+    for actor in actors:
+        renderer.AddActor(actor)
+
+    renderWindow.SetWindowName('CellsInsideObject')
+    renderWindow.Render()
+    renderer.GetActiveCamera().Azimuth(30)
+    renderer.GetActiveCamera().Elevation(30)
+    renderer.GetActiveCamera().Dolly(1.25)
+    renderWindow.Render()
+
+    renderWindowInteractor.Start()
+    return

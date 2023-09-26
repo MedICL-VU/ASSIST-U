@@ -73,13 +73,13 @@ def create_label(coordinates, radius):
     sphere.Update()
     return sphere.GetOutput()
 
-def create_labelactor(coordinates, radius=1.0):
+def create_labelactor(coordinates, radius=1.0, color='Red'):
     mapper = vtkPolyDataMapper()
     mapper.SetInputDataObject(create_label(coordinates, radius))
     actor = vtkActor()
     actor.SetMapper(mapper)
     colors = vtkNamedColors()
-    actor.GetProperty().SetColor(colors.GetColor3d("Red"))
+    actor.GetProperty().SetColor(colors.GetColor3d(color))
     return actor
 
 def load_labels(fname, radius=1.0):
