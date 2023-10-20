@@ -47,10 +47,11 @@ def get_edges(modelpath, params):
     if params['visualize']:
         # sample between edges
         skele_points = np.ndarray((0, 3))
-        for edge in swc.edges:
+        # for edge in swc.edges:
+        for p0,p1 in edgelist:
             # get two points
-            p0 = swc.vertices[edge[0]]
-            p1 = swc.vertices[edge[1]]
+            # p0 = swc.vertices[edge[0]]
+            # p1 = swc.vertices[edge[1]]
             dist = np.linalg.norm(p0 - p1)
             num_points = int(np.floor(dist / 0.5))
             skele_points = np.append(skele_points, np.linspace(p0, p1, num_points), 0)
@@ -87,7 +88,8 @@ def gen_positions(modelpath, params):
 
     # for each edge traverse forwards and backwards recording views
     positions = []
-    for edge in path:
+    for direction, edge in path:
+        # direction 1 is forward, -1 is backward
         v1, v2 = edge
 
         #sample points along edge
@@ -95,48 +97,73 @@ def gen_positions(modelpath, params):
         num_points = int(np.floor(dist / params['samplestep']))
         track = np.linspace(v1, v2, num_points)
 
+        if direction == -1:
+            track = track[::-1]
         # forward view
         for i in range(0, len(track)-1):
-            coords = sphere_gen(v1, v2, localbending, params['numpoints'])
+            coords = sphere_gen(v1, v2, localbending, params['numpoints']) #still want same camera direction
             for j in range(len(coords)):
-                positions.append((track[i], coords[j]))  # coord, focalpoint (nextpoint)
+                positions.append((track[i], coords[j]))  # coord, focal direction (nextpoint)
 
             # generate sample points up to localbending degrees off the v1->v2 vector
 
     return positions
 
 
+
+def dfspath(path, edges, node, last, visited, globalbending):
+    if node not in visited:
+        visited.add(node)
+        v1,v2 = edges[node]
+        # print(node, end=' ')  # Process the current node
+        path.append([1, edges[node]])
+
+        successors = find_successors(v2, edges[:, 0, :])
+
+        success_count = 0
+        for successor in successors:
+            successor_vector = vectorize(edges[successor][0], edges[successor][1])
+
+            if not np.linalg.norm(successor_vector) < 0.0000005 and angle(vectorize(v1, v2),
+                                                                          successor_vector) < globalbending:
+            # if not np.linalg.norm(successor_vector) < 0.0000005:
+                path = dfspath(path, edges, successor, node, visited, globalbending)
+                success_count +=1
+        if success_count == 0:
+            path.append([-1, edges[node]])
+        # print(last, end=' ')
+        path.append([-1, edges[last]])
+    return path
+
 def organize_paths(start, edges, globalbending, mode):
     path = []
     queue = []
     visited = set()
-    # v1, v2 = edges[start]
-    # successors = find_successors(v2, edges[:,0,:]) # returns indices
-    # for successor in successors:
-    #     if angle(vectorize(v1,v2), vectorize(edges[successor][0], edges[successor][1])) < globalbending:
-    #         queue += successor
-    path.append(edges[start])
-    queue.append(edges[start])
-    visited.add(start)
-    while len(queue) > 0:
-        v1, v2 = queue.pop(0)
-        successors = find_successors(v2, edges[:, 0, :])  # returns indices
-        for successor in successors:
-            successor_vector = vectorize(edges[successor][0], edges[successor][1])
-            if mode == 'bfs':
-                if not np.linalg.norm(successor_vector) < 0.0000005 and angle(vectorize(v1, v2), successor_vector) < globalbending and successor not in visited:
+
+    if mode == 'dfs':
+        path = dfspath(path, edges, start, start, visited, globalbending)
+        return path[:-1]
+    elif mode =='bfs':
+        path.append([1,edges[start]])
+        queue.append(edges[start])
+        while len(queue) > 0:
+            v1, v2 = queue.pop(0)
+            successors = find_successors(v2, edges[:, 0, :])  # returns indices
+            for successor in successors:
+                successor_vector = vectorize(edges[successor][0], edges[successor][1])
+                if mode == 'unfiltered':
+                    if successor not in visited:
+                        # if not length 0, angle is valid, and not seen before
+                        path.append([1,edges[successor]])
+                        queue.append(edges[successor])
+                        visited.add(successor)
+                elif not np.linalg.norm(successor_vector) < 0.0000005 and angle(vectorize(v1, v2), successor_vector) < globalbending and successor not in visited:
                     # if not length 0, angle is valid, and not seen before
-                    path.append(edges[successor])
+                    path.append([1,edges[successor]])
                     queue.append(edges[successor])
                     visited.add(successor)
-            elif mode == 'unfiltered':
-                if successor not in visited:
-                    # if not length 0, angle is valid, and not seen before
-                    path.append(edges[successor])
-                    queue.append(edges[successor])
-                    visited.add(successor)
-            else:
-                pass
+                else:
+                    pass
     return path
 
 
@@ -148,8 +175,8 @@ def find_nearest(point, edgelist):
 
 def find_successors(point, edgelist, tolerances=0.1):
     distances = scipy.spatial.distance.cdist([point], edgelist)
-
-    return np.argwhere(distances < tolerances)[:,1]
+    successors = np.argwhere(distances < tolerances)[:,1]
+    return successors
 
 def smooth_path(edges):
     pass
@@ -169,6 +196,8 @@ def sphere_gen(v1,v2, local_bending, points):
     sphere_coords = fibonacci_sphere(int(num_points*(1/ratio)))
     unit_center = unit_vector(vectorize(v1,v2))
     angles = angle_matrix(unit_center, sphere_coords)
+    if num_points ==1:
+        return [unit_center]
     return sphere_coords[angles<local_bending]*vectorize(v1,v2)
 
 def fibonacci_sphere(samples):

@@ -155,7 +155,7 @@ def predict_reachability(modelpath, params):
     lastcam = None
     count = 0
     # pbar = tqdm(positions)
-    for position in positions:
+    for direction, position in positions:
         fakecam = gen_cam(position,params['cameradepth'], params['fov'])
         newmask = mark_intersection(collectingsystem, fakecam)
         mask = update_masks(mask, newmask)

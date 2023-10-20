@@ -80,7 +80,7 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
         light1.SetPosition(coord[0], coord[1], coord[2])
         light1.SetFocalPoint(focal[0], focal[1], focal[2])
         light1.SetColor(colors.GetColor3d('100W Tungsten'))
-        light1.SetIntensity(4)
+        light1.SetIntensity(3)
         renderer.AddLight(light1)
 
     renderWindow = vtkRenderWindow()
@@ -124,7 +124,8 @@ def render(modelpath, params):
     count = 0
     # pbar = tqdm(positions)
     for coord, focalpoint in positions:
-        if count>=1:break
+        # if count>=1:break
+        focalpoint = coord + focalpoint
         save_view(f'{count:05}', coord, focalpoint, params['savedir'], modelpath, params['modelname'], params['save'])
         count += 1
 

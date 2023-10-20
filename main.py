@@ -52,7 +52,7 @@ def analyze(params):
 
 def proto(params):
     modelnames = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
-    params['modelname'] = modelnames[2]
+    params['modelname'] = modelnames[1]
     iou, dsc = analysis.analysis( params)
     print(f'iou: {iou}')
     print(f'dsc: {dsc}')
@@ -113,9 +113,9 @@ def multiparamsearch(params):
     print(f'Param: {dscparam}')
 
 def video_render(params):
-
+    # ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
     # saves a ton of images for visualization
-    for name in ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']:
+    for name in ['manualsegmentation1']:
         params['modelname'] = name
         modelpath = os.path.join('data', '3dmodels', params['modelname'] + '.stl')
         renderVideo.render(modelpath, params)
@@ -126,15 +126,15 @@ if __name__ == '__main__':
         'cameradepth': 14.0,
         'fov': 87 // 2,  # cite boston scientific -- fiberoptic flexs 85
         'localbending': 30,
-        'globalbending': 150,
+        'globalbending': 170,
         'wavesize': 10,
         'wavecount': 2,
         'numpoints': 1, # how many camera points to sample
-        'samplestep': 0.5,
+        'samplestep': 0.2,
         'visualize': False,
-        'savedir': 'output_unfiltered',
-        'save': False,
-        'planmode': 'unfiltered', # bfs, dfs
+        'savedir': 'output',
+        'save': True,
+        'planmode': 'dfs', # bfs, dfs, unfiltered
         'modelname': 'Patient1Right',
         'models': {'collectingsystem2': (-41.4481495420699, 19.731541937774082, -97.36807944184557),
                    'manualsegmentation1': (-45.75806986508405, 123.49623714056546, 1132.751798267298),
