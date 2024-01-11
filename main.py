@@ -113,12 +113,13 @@ def multiparamsearch(params):
     print(f'Param: {dscparam}')
 
 def video_render(params):
-    # ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
+    models = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
     # saves a ton of images for visualization
-    for name in ['manualsegmentation1']:
+    for name in models:
         params['modelname'] = name
         modelpath = os.path.join('data', '3dmodels', params['modelname'] + '.stl')
         renderVideo.render(modelpath, params)
+        break
 
 
 if __name__ == '__main__':
@@ -130,7 +131,7 @@ if __name__ == '__main__':
         'wavesize': 10,
         'wavecount': 2,
         'numpoints': 1, # how many camera points to sample
-        'samplestep': 0.2,
+        'samplestep': 0.5,
         'visualize': False,
         'savedir': 'output',
         'save': True,
