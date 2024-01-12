@@ -11,6 +11,27 @@ import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkIOImage import vtkPNGWriter
+
+# RenderingContextOpenGL2
+#   RenderingCore
+#   RenderingFreeType
+#   RenderingGL2PSOpenGL2
+#   RenderingOpenGL2
+
+#vtkOpenGLRenderer
+#vtkSquencePass
+#vtkRenderPassCollection
+#vtkShadowMapPass
+#vtkOpaquePass
+#vtkCameraPass
+from vtkmodules.vtkRenderingOpenGL2 import (
+    vtkOpenGLRenderer,
+    vtkSequencePass,
+    vtkRenderPassCollection,
+    vtkShadowMapPass,
+    vtkOpaquePass,
+    vtkCameraPass
+)
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkLight,
@@ -20,7 +41,6 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderWindowInteractor,
     vtkRenderer,
     vtkWindowToImageFilter,
-    vtkPropPicker
 )
 
 from vtkmodules.vtkFiltersCore import (
@@ -42,8 +62,9 @@ def stitch_dmap(rgb_outputs, depth_outputs, x,y):
     dmap = np.zeros((x,y))
     for rgb, depth in zip(rgb_outputs, depth_outputs):
         # where rgb != 255,255,255
-        quick_sum = np.sum(rgb, axis=2)
-        image_mask = quick_sum != 255*3
+        # quick_sum = np.sum(rgb, axis=2)
+        # image_mask = quick_sum != 255*3
+        image_mask = (rgb != [0,255,0]).all(axis=2)
         dmap_mask = dmap == 0
         # where dmap still 0, update with latest depth where rgb is positive
         dmap = np.where(np.logical_and(image_mask, dmap_mask),depth, dmap)
@@ -54,7 +75,7 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
     # string, tuple, tuple
     colors = vtkNamedColors()
     colors.SetColor('100W Tungsten', [255, 214, 170, 255])
-    colors.SetColor('Full White', [255,255,255,255])
+    colors.SetColor('Full Green', [0,255,0,255])
 
     # Create a reader
     filename = modelpath
@@ -86,8 +107,8 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
     actor.SetMapper(mapper)
     actor.GetProperty().SetSpecular(0.1)
     actor.GetProperty().SetSpecularPower(2)
-    actor.GetProperty().SetAmbient(0.0)
-    actor.GetProperty().SetDiffuse(0.5)
+    actor.GetProperty().SetAmbient(0)
+    actor.GetProperty().SetDiffuse(5)
     actor.GetProperty().SetColor(colors.GetColor3d('darksalmon'))
 
     camera = vtkCamera()
@@ -95,24 +116,47 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
     camera.SetFocalPoint(focal[0], focal[1], focal[2])
 
     # Create a renderer, render window, and interactor
-    renderer = vtkRenderer()
+    # renderer = vtkRenderer()
+    renderer = vtkOpenGLRenderer()
+    seq = vtkSequencePass()
+    passes = vtkRenderPassCollection()
+    shadows = vtkShadowMapPass()
+
+    passes.AddItem(shadows.GetShadowMapBakerPass())
+    passes.AddItem(shadows)
+
+    opaque =vtkOpaquePass()
+    passes.AddItem(opaque)
+
+    seq.SetPasses(passes)
+
+    cameraP = vtkCameraPass()
+    cameraP.SetDelegatePass(seq)
+
+    renderer.SetPass(cameraP)
+
     renderer.SetActiveCamera(camera)
-
+    renderer.AutomaticLightCreationOff()
     renderer.RemoveAllLights()
-    renderer.TwoSidedLightingOff()
+    # renderer.TwoSidedLightingOff()
 
-    lighton = True
-    if lighton:
-        light1 = vtkLight()
-        light1.SetPositional(True)
-        light1.SetLightTypeToHeadlight()
-        light1.SetPosition(coord[0], coord[1], coord[2])
-        light1.SetFocalPoint(focal[0], focal[1], focal[2])
-        light1.SetColor(colors.GetColor3d('100W Tungsten'))
-        light1.SetIntensity(4)
-        renderer.AddLight(light1)
+    light1 = vtkLight()
+    light1.SetLightTypeToHeadlight()
+    light1.SetPosition(coord[0], coord[1], coord[2])
+    light1.SetFocalPoint(focal[0], focal[1], focal[2])
 
-    x = y = 256
+    light1.SetColor(colors.GetColor3d('100W Tungsten'))
+    light1.SetAttenuationValues(0.5,1,0.1)
+    # print(light1.GetConeAngle())
+    # light1.SetConeAngle(30)
+    # light1.SetColor(colors.GetColor3d('White'))
+    light1.SetIntensity(4)
+    light1.PositionalOn()
+    # light1.SetIntensity(2)
+    renderer.AddLight(light1)
+    light1.SwitchOn()
+
+    x = y = 512
 
     renderWindow = vtkRenderWindow()
     renderWindow.AddRenderer(renderer)
@@ -120,10 +164,9 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
     renderWindow.SetSize(x, y)
     renderWindow.Render()
 
-
     # Add the actor to the scene
     renderer.AddActor(actor)
-    renderer.SetBackground(colors.GetColor3d('Full White'))
+    renderer.SetBackground(colors.GetColor3d('Full Green'))
     # renderer.ResetCameraClippingRange()
     # camera.SetClippingRange(1, 10)
 
@@ -200,8 +243,7 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
             scalars = w2if.GetOutput().GetPointData().GetScalars()
             image = vtk_to_numpy(scalars)
             image = image.reshape(x, y)
-            image = -1 * 2. * near * far / ((image - 0.5) * 2.
-                                               * (far - near) - near - far) # without parallel projection
+            image = -1 * 2. * near * far / ((image - 0.5) * 2. * (far - near) - near - far) # without parallel projection
             # image *= -255
             depth_outputs.append(image)
 
