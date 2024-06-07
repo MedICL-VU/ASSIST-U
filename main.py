@@ -4,6 +4,7 @@ from rendering import keypointPicker, render, labelVisualizer, renderVideo
 from reachability import planner, reachability, analysis
 from multiprocessing import Pool
 import copy
+from util.argparser import parse_args
 
 
 def main(params):
@@ -113,41 +114,37 @@ def multiparamsearch(params):
     print(f'Param: {dscparam}')
 
 def video_render(params):
-    models = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
-    # saves a ton of images for visualization
-    for name in models:
-        params['modelname'] = name
-        modelpath = os.path.join('data', '3dmodels', params['modelname'] + '.stl')
-        renderVideo.render(modelpath, params)
-        break
+    # models = ['collectingsystem2', 'manualsegmentation1', 'Patient1Right', 'Patient3Left']
+    # models = ['manualsegmentation1', 'Patient1Right', 'Patient3Left']
 
+    # saves a ton of images for visualization
+    # for name in params.models:
+    #     params['modelname'] = name
+    #     modelpath = os.path.join('data', '3dmodels', params['modelname'] + '.stl')
+    renderVideo.render(params)
 
 if __name__ == '__main__':
-    params = {
-        'cameradepth': 14.0,
-        'fov': 87 // 2,  # cite boston scientific -- fiberoptic flexs 85
-        'localbending': 30,
-        'globalbending': 170,
-        'wavesize': 10,
-        'wavecount': 2,
-        'numpoints': 1, # how many camera points to sample
-        'samplestep': 0.5,
-        'visualize': False,
-        'savedir': 'output',
-        'save': True,
-        'planmode': 'dfs', # bfs, dfs, unfiltered
-        'modelname': 'Patient1Right',
-        'models': {'collectingsystem2': (-41.4481495420699, 19.731541937774082, -97.36807944184557),
+
+    params = parse_args()
+    params = vars(params)
+
+    # add saved parameters to make testing faster. Will prompt you to pick a point if it doesn't exist
+    params['models'] = {'collectingsystem2': (-41.4481495420699, 19.731541937774082, -97.36807944184557),
                    'manualsegmentation1': (-45.75806986508405, 123.49623714056546, 1132.751798267298),
                    'Patient1Right': (23.350248181136337, -137.49344143532295, 803.300038855812),
-                   'Patient3Left': (-52.889510869031284, -169.82580547336187, -442.6200299143518)}
-    }
+                   'Patient3Left': (-52.889510869031284, -169.82580547336187, -442.6200299143518),
+                   'arpah_decimated':  (-80.8254, -121.328, -1.2019)}
 
-    # main(params)
+    video_render(params)
+
+
+    '''# Other functions for AVA
     # avgiou, avgdsc, _ = analyze(params)
     # print(f'AVG IOU: {avgiou}')
     # print(f'AVG DSC: {avgdsc}')
     # proto(params)
     # label_viz(params)
     # multiparamsearch(params)
-    video_render(params)
+    '''
+
+

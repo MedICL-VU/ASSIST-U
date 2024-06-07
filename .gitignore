@@ -7,5 +7,4 @@ output
 output_unfiltered
 proto
 .mp4
-output.zip
-util/output_video.mp4
+data

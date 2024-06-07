@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 from rendering import render
 from reachability import planner
+from reachability import reachability
 
 # noinspection PyUnresolvedReferences
 import vtkmodules.vtkInteractionStyle
@@ -11,6 +12,7 @@ import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkIOImage import vtkPNGWriter
+from util.dirtovid import dir2vid
 
 # RenderingContextOpenGL2
 #   RenderingCore
@@ -57,6 +59,7 @@ from vtkmodules.vtkImagingCore import (
     vtkImageShiftScale,
 )
 from tqdm import tqdm
+from util.SocketCommand import send_command
 
 def stitch_dmap(rgb_outputs, depth_outputs, x,y):
     dmap = np.zeros((x,y))
@@ -64,18 +67,56 @@ def stitch_dmap(rgb_outputs, depth_outputs, x,y):
         # where rgb != 255,255,255
         # quick_sum = np.sum(rgb, axis=2)
         # image_mask = quick_sum != 255*3
-        image_mask = (rgb != [0,255,0]).all(axis=2)
+        image_mask = (rgb != [0,0,255]).any(axis=2)
+        # image_mask2 = (rgb != [0, 0, 254]).all(axis=2)
         dmap_mask = dmap == 0
         # where dmap still 0, update with latest depth where rgb is positive
         dmap = np.where(np.logical_and(image_mask, dmap_mask),depth, dmap)
 
     return dmap
 
-def save_view(id, coord, focal, savedir, modelpath, modelname, save):
+
+def logistic_rescale(dmap, steepness=10, midpoint=0.5):
+    """
+    Applies a logistic transformation to the depth map to increase intensity variation
+    more in the near plane than the far plane.
+
+    :param dmap: Depth map, scaled between 0 and 255.
+    :param steepness: Controls the steepness of the logistic curve.
+    :param midpoint: The value at which the logistic curve's midpoint occurs.
+    :return: Rescaled depth map.
+    """
+    # Normalize the depth map to range [0, 1]
+    normalized_dmap = dmap / 255.0
+
+    # Apply the logistic function
+    logistic_dmap = 1 / (1 + np.exp(-steepness * (normalized_dmap - midpoint)))
+
+    # Scale back to range [0, 255] if needed
+    rescaled_dmap = 255 * logistic_dmap
+
+    return rescaled_dmap
+
+def save_unity(id, coord, focal, savedir, modelname):
+
+    # currently assumes model already loaded
+    send_command(f'MoveCamera,{-coord[0]},{coord[1]},{coord[2]}')
+    send_command(f'RotateCameraLook,{-focal[0]},{focal[1]},{focal[2]}')
+
+    fpath = os.path.join(os.getcwd(), savedir, modelname)
+    rendername= os.path.join(fpath,'render', id+'_render.png')
+    send_command(f'Screenshot,{rendername},Normal')
+    depthname = os.path.join(fpath, 'depth', id + '_dmap.png')
+    send_command(f'Screenshot,{depthname},Depth')
+
+def save_vtk(id, coord, focal, savedir, modelpath, modelname, save):
     # string, tuple, tuple
     colors = vtkNamedColors()
     colors.SetColor('100W Tungsten', [255, 214, 170, 255])
     colors.SetColor('Full Green', [0,255,0,255])
+    colors.SetColor('Full White', [255, 255, 255, 255])
+    colors.SetColor('Full Blue', [0, 0, 255, 255])
+    colors.SetColor('Kidney', [250,193,175,255])
 
     # Create a reader
     filename = modelpath
@@ -105,15 +146,18 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
 
     actor = vtkActor()
     actor.SetMapper(mapper)
-    actor.GetProperty().SetSpecular(0.1)
+    actor.GetProperty().SetSpecular(0.2)
     actor.GetProperty().SetSpecularPower(2)
     actor.GetProperty().SetAmbient(0)
     actor.GetProperty().SetDiffuse(5)
-    actor.GetProperty().SetColor(colors.GetColor3d('darksalmon'))
+    actor.GetProperty().SetColor(colors.GetColor3d('Kidney'))
+    # actor.GetProperty().SetInterpolationToPBR()
+    # actor.GetProperty().SetColor(colors.GetColor3d('darksalmon'))
 
     camera = vtkCamera()
     camera.SetPosition(coord[0], coord[1], coord[2])
     camera.SetFocalPoint(focal[0], focal[1], focal[2])
+    # camera.SetViewAngle(2)
 
     # Create a renderer, render window, and interactor
     # renderer = vtkRenderer()
@@ -146,11 +190,12 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
     light1.SetFocalPoint(focal[0], focal[1], focal[2])
 
     light1.SetColor(colors.GetColor3d('100W Tungsten'))
-    light1.SetAttenuationValues(0.5,1,0.1)
+    light1.SetAttenuationValues(0.8, 0.2, 0)
+    # light1.SetAttenuationValues(0.8,1,0)
     # print(light1.GetConeAngle())
     # light1.SetConeAngle(30)
     # light1.SetColor(colors.GetColor3d('White'))
-    light1.SetIntensity(4)
+    light1.SetIntensity(10)
     light1.PositionalOn()
     # light1.SetIntensity(2)
     renderer.AddLight(light1)
@@ -166,7 +211,7 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
 
     # Add the actor to the scene
     renderer.AddActor(actor)
-    renderer.SetBackground(colors.GetColor3d('Full Green'))
+    renderer.SetBackground(colors.GetColor3d('Full Blue'))
     # renderer.ResetCameraClippingRange()
     # camera.SetClippingRange(1, 10)
 
@@ -178,61 +223,28 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
         # w2if.ReadFrontBufferOff()
         w2if.Update()
         writer = vtkPNGWriter()
-        writer.SetFileName(os.path.join(savedir, modelname, f'{id}_render.png'))
+        writer.SetFileName(os.path.join(savedir, modelname, 'render', f'{id}_render.png'))
         writer.SetInputConnection(w2if.GetOutputPort())
         writer.Write()
 
         # depth
-
-        # w2if.SetInput(renderWindow)
-        # w2if.SetInputBufferTypeToZBuffer()
-        # # w2if.ReadFrontBufferOn()
-        # w2if.Update()
-        # converter = vtkImageShiftScale()
-        # converter.SetOutputScalarTypeToUnsignedShort()
-        # converter.SetInputData(w2if.GetOutput())
-        # # converter.SetClampOverflow(True)
-        # # converter.SetShift(0)
-        # converter.SetScale(255)
-        # converter.Update()
-        #use displaytoworld instead?
-
-        # writer = vtkPNGWriter()
-        # writer.SetFileName(os.path.join(savedir, modelname, f'{id}_depth.png'))
-        # writer.SetInputConnection(converter.GetOutputPort())
-        # writer.Write()
-
-        # manual depth - picking
-        # dmap = np.zeros((x,y))
-        # https://discourse.vtk.org/t/deriving-coordinates-for-display-pixel-values/9364 how to vectorize in future
-
-        # for i in range(x):
-        #     for j in range(y):
-        #         picker = vtkPropPicker()
-        #         picker.Pick(i, j, 0, renderer)
-        #         pos = picker.GetPickPosition()
-        #         # worldcoord = renderer.DisplayToWorld(vtkVector3d(i,j,0))
-        #         dmap[i][j] = math.sqrt(vtkMath.Distance2BetweenPoints(pos, coord))
-        #         # dmap[i][j]
-        #
-        # dmap = 255.0 *(dmap - dmap.min())/dmap.ptp()
-        # im = Image.fromarray(np.rot90(dmap))
-        # im = im.convert('RGB')
-        # im.save(os.path.join(savedir, modelname, f'{id}_manualdepth.png'))
 
         # manual depth 2 - stitching
         # ratios = [(0.1,1), (1,5), (5,10), (10,50),(50,100), (100,500), (500,1000)]
         ratios = [(1e-5,0.1),
                   (0.1,0.5),
                   (0.5,1),
-                  (1,2),
-                  (2,5),
+                  (1,5),
                   (5,10),
-                  (10,20),
-                  (20,50),
+                  (10,15),
+                  (15,20),
+                  (20, 25),
+                  (25, 30),
+                  (30, 50),
                   (50,100),
-                  (100,500),
-                  (500,1000),]
+                  (100,250)]
+                  # (100,500),
+                  # (500,1000),]
         rgb_outputs = []
         depth_outputs = []
         for (near, far) in ratios:
@@ -266,12 +278,16 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
         dmap = np.flipud(dmap)
         im = Image.fromarray(dmap)
         # im = im.convert('F')
-        im.save(os.path.join(savedir, modelname, f'{id}_dmap_raw.tiff'))
+        im.save(os.path.join(savedir, modelname, 'raw', f'{id}_dmap_raw.tiff'))
 
         dmap = 255.0 * (dmap - dmap.min()) / dmap.ptp()
+        # invert dmap
+        # dmap = 255. - dmap
+        # dmap = logistic_rescale(dmap,steepness=2,  midpoint=0.75)
+
         im = Image.fromarray(dmap)
         im = im.convert('L')
-        im.save(os.path.join(savedir, modelname, f'{id}_dmap.png'))
+        im.save(os.path.join(savedir, modelname, 'depth', f'{id}_dmap.png'))
 
 
         # print(camera.GetParallelProjection())
@@ -285,20 +301,30 @@ def save_view(id, coord, focal, savedir, modelpath, modelname, save):
         renderWindowInteractor.Initialize()
         renderWindowInteractor.Start()
 
-def render(modelpath, params):
+def render(params):
     if not os.path.isdir(os.path.join(params['savedir'], params['modelname'])):
         os.makedirs(os.path.join(params['savedir'], params['modelname']))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'render'))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'depth'))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'raw'))
 
     # generate camera positions
-    positions = planner.gen_positions(modelpath, params)
+    positions = planner.gen_positions(params)
+
 
     count = 0
     # pbar = tqdm(positions)
     for coord, focalpoint in positions:
-        if count>=1:break
-        focalpoint = coord + focalpoint
-        save_view(f'{count:05}', coord, focalpoint, params['savedir'], modelpath, params['modelname'], params['save'])
+        if params['renderer'] == 'unity' and params['save']:
+            # move camera here
+            # calculate rotation
+            # get dir
+            # save view
+            save_unity(f'{count:05}', coord, focalpoint, params['savedir'], params['modelname'])
+        else:
+            save_vtk(f'{count:05}', coord, focalpoint, params['savedir'], params['modelpath'], params['modelname'], params['save'])
         count += 1
 
+    # dir2vid(params['savedir'], params['modelname'])
 
     return
