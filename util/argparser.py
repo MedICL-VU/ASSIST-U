@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--planmode', default='dfs', type=str) #bfs currently broken
     parser.add_argument('--modelname', default='arpah_decimated', type=str)
     parser.add_argument('--modelpath', default='data/3dmodels/arpah_decimated.stl', type=str)
-    # parser.add_argument('--model', action='append', nargs=4)
+    parser.add_argument('--contract_mesh', action='store_true')
 
     args = parser.parse_args()
     return args
