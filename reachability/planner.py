@@ -129,7 +129,7 @@ def gen_positions(params):
     # dfs edge paths and place in order
     # assumes no loops
     path = organize_paths(start, edgelist, params)
-    path = smooth_path(path)
+    path = smooth_path(path, midpoint_iterations=params['smoothing_subdivisions'], smoothing_iterations=params['smoothing_iter'])
 
     if params['visualize']:
         mesh_o3d = o3d.io.read_triangle_mesh(modelpath)

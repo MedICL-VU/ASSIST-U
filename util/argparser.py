@@ -47,6 +47,8 @@ def parse_args():
     parser.add_argument('--modelname', default='arpah_decimated', type=str)
     parser.add_argument('--modelpath', default='data/3dmodels/arpah_decimated.stl', type=str)
     parser.add_argument('--contract_mesh', action='store_true')
+    parser.add_argument('--smoothing_subdivisions', default=5, type=int)
+    parser.add_argument('--smoothing_iter', default=10, type=int)
 
     args = parser.parse_args()
     return args
