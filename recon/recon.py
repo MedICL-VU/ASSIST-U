@@ -108,10 +108,12 @@ def calculate_new_position(position, rotation_quaternion, direction_vector=np.ar
     return new_position
 
 def extract_euler_angles_from_quaternion(rotation, invert= False):
-
-    quat = quaternion.from_float_array(rotation)
-    if invert:
-        quat = quat.inverse() # try this for unity
+    quat = get_rotation_matrices(rotation)
+    # quat = quaternion.from_float_array(rotation)
+    # if invert:
+    #     quat = quat.inverse() # try this for unity
+    rotation_inv = np.linalg.inv(quat)
+    quat = quaternion.from_rotation_matrix(rotation_inv)
     # Ensure the quaternion is normalized
     quat_normalized = quat.normalized()
     # Convert quaternion to Euler angles (roll, pitch, yaw)
@@ -127,11 +129,14 @@ def compute_focals(images):
     positions = []
 
     for image in images:
-        position, rotation = image[1], image[2]
+        position, rotation = image[1], -image[2]
         focal_point = calculate_new_position(position, rotation, invert=False)
+
+        #https://github.com/colmap/colmap/issues/1376
+        #colmap (x,y,z,x°,y°,z°) = unity (x,-y,z,-x°,-y°,z°)
         roll, pitch, yaw = extract_euler_angles_from_quaternion(rotation, invert=False)
         name = image[4].split('/')[1]
-        positions.append((position, focal_point, [roll, pitch, yaw], name))
+        positions.append((position, focal_point, [-1*roll,-1* pitch, yaw], name))
     return positions
 
 

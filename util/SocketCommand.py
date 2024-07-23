@@ -17,8 +17,8 @@ def send_command(command):
     # else:
     #     send_command(f'RotateCameraLook,{-focal[0]},{focal[1]},{focal[2]}')
 if __name__=='__main__':
-    send_command(f'MoveCamera,{-11.30071532},{39.94956768},{30.84415942}')
-    send_command(f"RotateCameraLook,{-11.13278016},{ 40.34419754},{29.94079623}")  # Move camera to (10, 20, 30)
+    # send_command(f'MoveCamera,{-11.30071532},{39.94956768},{30.84415942}')
+    send_command(f"RotateCamera,{180},{50},{30}")  # Move camera to (10, 20, 30)
 
 
 
