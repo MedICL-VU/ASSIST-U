@@ -13,6 +13,7 @@ from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkIOImage import vtkPNGWriter
 from util.dirtovid import dir2vid
+from recon import recon
 
 # RenderingContextOpenGL2
 #   RenderingCore
@@ -97,11 +98,15 @@ def logistic_rescale(dmap, steepness=10, midpoint=0.5):
 
     return rescaled_dmap
 
-def save_unity(id, coord, focal, savedir, modelname):
+def save_unity(id, coord, focal, savedir, modelname, rotation=None):
 
     # currently assumes model already loaded
     send_command(f'MoveCamera,{-coord[0]},{coord[1]},{coord[2]}')
-    send_command(f'RotateCameraLook,{-focal[0]},{focal[1]},{focal[2]}')
+    # send_command(f'RotateCameraLook,{-focal[0]},{focal[1]},{focal[2]}')
+    if rotation is not None:
+        send_command(f'RotateCamera,{rotation[0]},{rotation[1]},{rotation[2]}')
+    else:
+        send_command(f'RotateCameraLook,{-focal[0]},{focal[1]},{focal[2]}')
 
     fpath = os.path.join(os.getcwd(), savedir, modelname)
     rendername= os.path.join(fpath,'render', id+'_render.png')
@@ -109,7 +114,7 @@ def save_unity(id, coord, focal, savedir, modelname):
     depthname = os.path.join(fpath, 'depth', id + '_dmap.png')
     send_command(f'Screenshot,{depthname},Depth')
 
-def save_vtk(id, coord, focal, savedir, modelpath, modelname, save):
+def save_vtk(id, coord, focal, savedir, modelpath, modelname, save, cam_roll=None):
     # string, tuple, tuple
     colors = vtkNamedColors()
     colors.SetColor('100W Tungsten', [255, 214, 170, 255])
@@ -158,6 +163,8 @@ def save_vtk(id, coord, focal, savedir, modelpath, modelname, save):
     camera.SetPosition(coord[0], coord[1], coord[2])
     camera.SetFocalPoint(focal[0], focal[1], focal[2])
     # camera.SetViewAngle(2)
+    if cam_roll is not None:
+        camera.SetRoll(cam_roll)
 
     # Create a renderer, render window, and interactor
     # renderer = vtkRenderer()
@@ -242,8 +249,8 @@ def save_vtk(id, coord, focal, savedir, modelpath, modelname, save):
                   (25, 30),
                   (30, 50),
                   (50,100),
-                  (100,250)]
-                  # (100,500),
+                  (100,250),
+                  (100,500),]
                   # (500,1000),]
         rgb_outputs = []
         depth_outputs = []
@@ -323,6 +330,46 @@ def render(params):
             save_unity(f'{count:05}', coord, focalpoint, params['savedir'], params['modelname'])
         else:
             save_vtk(f'{count:05}', coord, focalpoint, params['savedir'], params['modelpath'], params['modelname'], params['save'])
+        count += 1
+
+    # dir2vid(params['savedir'], params['modelname'])
+
+    return
+
+def render_registered_pair(params):
+    if not os.path.isdir(os.path.join(params['savedir'], params['modelname'])):
+        os.makedirs(os.path.join(params['savedir'], params['modelname']))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'render'))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'depth'))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'raw'))
+
+    # load phantom pcd
+    recon_pcd, recon_mesh, recon_center = recon.load_mesh(params['recon_mesh'], recenter=True)
+    # get center
+    # recon_center = recon_pcd.get_center()
+
+    # load camera positions
+    camera_poses = recon.load_images(params['recon_images'])
+    camera_poses = recon.calc_cam_center(camera_poses)
+    camera_poses = recon.adjust_image_center(camera_poses, recon_center)
+    camera_poses = recon.adjust_camera_scale(camera_poses, recon_center, scale=5)
+
+    # calc focalpoint
+    positions = recon.compute_focals(camera_poses)
+    # camera_poses = recon.flip_camera_x(positions) # for unity
+
+    count = 0
+    # pbar = tqdm(positions)
+    for coord, focalpoint, cam_rotate, name in positions:
+        if params['renderer'] == 'unity' and params['save']:
+            # move camera here
+            # calculate rotation
+            # get dir
+            # save view
+            save_unity(name[:-4], coord, focalpoint, params['savedir'], params['modelname'], cam_rotate)
+        else:
+            save_vtk(name[:-4], coord, focalpoint, params['savedir'], params['modelpath'], params['modelname'], params['save'],
+                     cam_roll=cam_rotate[0])
         count += 1
 
     # dir2vid(params['savedir'], params['modelname'])

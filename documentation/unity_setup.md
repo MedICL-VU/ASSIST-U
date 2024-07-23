@@ -12,24 +12,32 @@ Unity does not like rendering the insides of surface meshes with surface normals
 
 All meshes should be loaded with position and rotation of (0,0,0). The camera will automatically be moved by ASSIST-U.
 
-### Quick Setup
+[//]: # (### Quick Setup)
 
----
+[//]: # ()
+[//]: # (---)
 
-The fastest way to set up the scene is to import the prefabs in _unity_files_.
+[//]: # ()
+[//]: # (The fastest way to set up the scene is to import the prefabs in _unity_files_.)
 
-You should import the mesh twice, assign one to a layer named `Mesh` and the other named `Depth`.
-The `Tissue Cam` prefab should be imported and added to the scene. Be sure that the top layer Tissue Cam is also assigned to Mesh and has Culling Mask set to Mesh. Similarly, the Depth Cam should have the corresponding layer and culling masks set.
+[//]: # ()
+[//]: # (You should import the mesh twice, assign one to a layer named `Mesh` and the other named `Depth`.)
 
-If the Camera Controller Script does not exist at the bottom of Tissue Cam as shown in the image below, see Manual Setup.
+[//]: # (The `Tissue Cam` prefab should be imported and added to the scene. Be sure that the top layer Tissue Cam is also assigned to Mesh and has Culling Mask set to Mesh. Similarly, the Depth Cam should have the corresponding layer and culling masks set.)
+
+[//]: # ()
+[//]: # (If the Camera Controller Script does not exist at the bottom of Tissue Cam as shown in the image below, see Manual Setup.)
 
 ![Unity Scene](./images/unity_scene_setup.png)
 
 ### Manual Scene Setup
 
 ---
+Start a new `3D` project in Unity Hub using the `Built-In Render Pipeline`.
 
-Create a new scene in Unity and delete all existing gameobjects.
+Create a new scene or reuse the startup scene in Unity and delete the main camera and light gameobjects on the left.
+
+Go to Window-> Rendering->Lighting. Under Environment set the environment lighting and environment 
 
 Import all unity files in [ASSIST-U/unity_files](../unity_files) into the Project/Assets.
 

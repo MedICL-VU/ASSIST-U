@@ -344,7 +344,7 @@ def main():
     -------
 
     '''
-    inside, outside = fibonacci_sphere2(9, np.array([1,0,0]), 30)
+    inside, outside = fibonacci_sphere2(100, np.array([1,0,0]), 30)
     print('Num inside: ', len(inside))
     viz_sphere(inside, outside)
 

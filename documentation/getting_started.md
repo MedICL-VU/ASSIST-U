@@ -20,6 +20,7 @@ opencv-python
 skeletor
 fastremap
 numpy
+quaternion
 ```
 
 

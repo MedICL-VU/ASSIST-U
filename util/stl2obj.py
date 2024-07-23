@@ -1,5 +1,5 @@
 import meshio
 
 
-mesh = meshio.read('../data/3dmodels/smoothed_arpah.stl')
-meshio.write('../data/3dmodels/smoothed_arpah.obj', mesh)
+mesh = meshio.read('../data/3dmodels/registered_phantom_test.stl')
+meshio.write('../data/3dmodels/registered_phantom_test.obj', mesh)

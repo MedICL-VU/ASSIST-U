@@ -123,6 +123,9 @@ def video_render(params):
     #     modelpath = os.path.join('data', '3dmodels', params['modelname'] + '.stl')
     renderVideo.render(params)
 
+def render_pairs(params):
+    renderVideo.render_registered_pair(params)
+
 if __name__ == '__main__':
 
     params = parse_args()
@@ -136,8 +139,8 @@ if __name__ == '__main__':
                    'arpah_decimated':  (-80.8254, -121.328, -1.2019)
                         }
 
-    video_render(params)
-
+    # video_render(params)
+    render_pairs(params)
 
     '''# Other functions for AVA
     # avgiou, avgdsc, _ = analyze(params)
