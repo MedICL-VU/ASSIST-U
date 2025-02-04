@@ -2,7 +2,7 @@ import os
 from tqdm import tqdm
 from rendering import keypointPicker, render, labelVisualizer, renderVideo
 from reachability import planner, reachability, analysis
-from multiprocessing import Pool
+# from multiprocessing import Pool
 import copy
 from util.argparser import parse_args
 

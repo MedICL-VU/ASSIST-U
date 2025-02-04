@@ -2,9 +2,12 @@ import os
 import math
 import numpy as np
 from PIL import Image
+
+from recon.recon import find_norms_focal
 from rendering import render
 from reachability import planner
 from reachability import reachability
+from tqdm import tqdm
 
 # noinspection PyUnresolvedReferences
 import vtkmodules.vtkInteractionStyle
@@ -98,15 +101,27 @@ def logistic_rescale(dmap, steepness=10, midpoint=0.5):
 
     return rescaled_dmap
 
-def save_unity(id, coord, focal, savedir, modelname, rotation=None):
+def save_unity(id, coord, focal, savedir, modelname, rotation=None, up=None):
 
     # currently assumes model already loaded
-    send_command(f'MoveCamera,{-coord[0]},{coord[1]},{coord[2]}')
+    send_command(f'MoveCamera,{coord[0]},{coord[1]},{coord[2]}')
+    # print(f'MoveCamera,{coord[0]},{coord[1]},{coord[2]}')
     # send_command(f'RotateCameraLook,{-focal[0]},{focal[1]},{focal[2]}')
     if rotation is not None:
-        send_command(f'RotateCamera,{rotation[0]},{rotation[1]},{rotation[2]}')
+        # send_command(f'RotateCamera,{rotationw},{rotationx},{rotationy}')
+        # send_command(f'RotateCameraQuat,{rotationw},{-rotationx},{-rotationy},{-rotationz}')
+        rotationw = rotation[0]
+        rotationx = rotation[1]
+        rotationy = rotation[2]
+        rotationz = rotation[3]
+        send_command(f'RotateCameraQuat,{rotationw},{rotationx},{rotationy},{rotationz}')
+
+    elif up is not None:
+        # print(f'RotateCameraLook,{focal[0]},{focal[1]},{focal[2]}, {up[0]},{up[1]},{up[2]}')
+        send_command(f'RotateCameraLook,{focal[0]},{focal[1]},{focal[2]}, {up[0]},{up[1]},{up[2]}')
+        # send_command(f'RotateCameraLook,{focal[0]},{focal[1]},{focal[2]}, {0},{1},{0}')
     else:
-        send_command(f'RotateCameraLook,{-focal[0]},{focal[1]},{focal[2]}')
+        send_command(f'RotateCameraLook,{focal[0]},{focal[1]},{focal[2]}')
 
     fpath = os.path.join(os.getcwd(), savedir, modelname)
     rendername= os.path.join(fpath,'render', id+'_render.png')
@@ -344,7 +359,8 @@ def render_registered_pair(params):
         os.makedirs(os.path.join(params['savedir'], params['modelname'], 'raw'))
 
     # load phantom pcd
-    recon_pcd, recon_mesh, recon_center = recon.load_mesh(params['recon_mesh'], recenter=True)
+    # recon_pcd, recon_mesh, recon_center = recon.load_mesh(params['recon_mesh'], recenter=True)
+    recon_pcd, recon_center = recon.load_reconpoints(params['recon_pcd'], recenter=True)
     # get center
     # recon_center = recon_pcd.get_center()
 
@@ -353,24 +369,80 @@ def render_registered_pair(params):
     camera_poses = recon.calc_cam_center(camera_poses)
     camera_poses = recon.adjust_image_center(camera_poses, recon_center)
     camera_poses = recon.adjust_camera_scale(camera_poses, recon_center, scale=5)
+    # print(camera_poses[0])
+    version ='rigid'
+    registered_poses = np.load(f'./data/soft3slowwet/registration3/phantom1_registered_cameras_{version}.npy')
+    registered_focals = np.load(f'./data/soft3slowwet/registration3/phantom1_registered_focals_{version}.npy')
+    camera_poses = recon.update_positions(camera_poses, registered_poses)
+    # print(camera_poses[0])
+
+    rotations = np.load(f'./data/soft3slowwet/registration3/phantom1_registered_rotations.npy')
+    camera_poses = recon.update_rotations(camera_poses, rotations)
+    # camera_poses = sorted(camera_poses, key=lambda x: x[4])
 
     # calc focalpoint
     positions = recon.compute_focals(camera_poses)
-    # camera_poses = recon.flip_camera_x(positions) # for unity
 
+    registered_up = np.load(f'./data/soft3slowwet/registration3/phantom1_registered_up_{version}.npy')
+    print(registered_up[55])
+    print(registered_focals[55])
+    method = 'focalup' # 'rotations' or 'focalup'
+    if method == 'rotations':
+        positions = recon.update_focals(positions, registered_focals)
+        positions, registered_up = recon.flip_camera_y(positions)
+    else:
+        positions = recon.update_focals(positions, registered_focals, up=registered_up)
+        positions, registered_up = recon.flip_camera_y(positions, up_positions=True)
+    # positions = recon.update_focals(positions, registered_focals, up=registered_up)
+
+    # print(f'Focal Norms: {recon.find_norms_focal(positions)}')
+    # print(f'Up Norms: {recon.find_norms_up(positions)}')
+
+    # positions, registered_up = recon.flip_camera_x(positions) # for unity
+    # 461
+    # positions, registered_up = recon.flip_camera_y(positions)
+    # print(f'Focal Norms: {recon.find_norms_focal(positions)}')
+    # print(f'Up Norms: {recon.find_norms_up(positions)}')
+    positions = sorted(positions, key=lambda x: x[3])
     count = 0
-    # pbar = tqdm(positions)
-    for coord, focalpoint, cam_rotate, name in positions:
+    pbar = tqdm(total=len(positions))
+    # for coord, focalpoint, cam_rotate, name in positions[100:101:]:
+    # for coord, focalpoint, cam_rotate, name in positions[700:701:]:
+    # for coord, focalpoint, cam_rotate, name in positions[1050:1051:]:
+    # for coord, focalpoint, cam_rotate, name in positions[1195:1200:]:
+    # for coord, focalpoint, cam_rotate, name in positions[1849:1850:]:
+    # for coord, focalpoint, cam_rotate, name in positions[2049:2050:]:
+    # for coord, focalpoint, cam_rotate, name in [positions[1198]]:
+    for coord, focalpoint, cam_rotate, name in positions[::]:
+    # for coord, focalpoint, cam_rotate, name in [positions[1050], positions[1100], positions[1600], positions[1849], positions[2049]]:
         if params['renderer'] == 'unity' and params['save']:
             # move camera here
             # calculate rotation
             # get dir
             # save view
-            save_unity(name[:-4], coord, focalpoint, params['savedir'], params['modelname'], cam_rotate)
+            # print(f'Coord: {coord}')
+            # print(f'Focal: {focalpoint}')
+            # print(f'Rotat: {cam_rotate}')
+            # print(f'Provided Up: {cam_rotate-coord}')
+            # print(f'DiffF:  {np.array(focalpoint) - np.array(coord)}')
+            # print(f'DiffU:  {np.array(cam_rotate) - np.array(coord)}')
+            # print(f'NormF:  {np.linalg.norm(np.array(focalpoint) - np.array(coord))}')
+            # print(f'NormU:  {np.linalg.norm(np.array(cam_rotate) - np.array(coord))}')
+            print(name)
+            if method == 'rotations':
+                save_unity(name[:-4], coord, focalpoint, params['savedir'], params['modelname'], cam_rotate)
+            else:
+                save_unity(name[:-4], coord, focalpoint, params['savedir'], params['modelname'], up=cam_rotate)
+            pass
+
         else:
             save_vtk(name[:-4], coord, focalpoint, params['savedir'], params['modelpath'], params['modelname'], params['save'],
                      cam_roll=cam_rotate[0])
         count += 1
+        pbar.update(1)
+        # print("Press Enter to continue...")
+        # input()
+        # print("Continuing...")
 
     # dir2vid(params['savedir'], params['modelname'])
 

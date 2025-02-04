@@ -21,7 +21,7 @@ def flip_normals(input_file, output_file):
         file.writelines(new_lines)
 
 # Example usage
-input_obj = '../data/3dmodels/registered_phantom_test.obj'
-output_obj = '../data/3dmodels/registered_phantom_test_flip.obj'
+input_obj = '../data/3dmodels/Patient1RightCT.obj'
+output_obj = '../data/3dmodels/Patient1RightCT_flip.obj'
 flip_normals(input_obj, output_obj)
 
