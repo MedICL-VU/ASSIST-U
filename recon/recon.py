@@ -83,10 +83,11 @@ def calc_cam_center(images):
     positions = np.asarray([image[1] for image in images])
     # positions[:,1] = -positions[:,1]
     for i, (position, rotation) in enumerate(zip(positions, rotation_matrices)):
-        cam_center = np.dot(np.linalg.inv(rotation) , position)
-        cam_center[0] = -cam_center[0]
-        cam_center[1] = -cam_center[1]
-        cam_center[2] = -cam_center[2]
+        # cam_center = np.dot(np.linalg.inv(rotation) , position)
+        cam_center = np.dot(np.transpose(-rotation), position)
+        # cam_center[0] = -cam_center[0]
+        # cam_center[1] = -cam_center[1]
+        # cam_center[2] = -cam_center[2]
         images[i][1] = cam_center
     return images
 
@@ -110,15 +111,13 @@ def adjust_camera_scale(images, center, scale):
         image[1] = position
     return images
 
-def flip_camera_x(images, up_positions=None):
+def flip_camera_x(images, up_positions=False):
     # [(position, focal_point, [roll, pitch, yaw], image_name), ...]
     for image in images:
         image[0][0] = -image[0][0]
         image[1][0] = -image[1][0]
-        image[2][0] = -image[2][0]
-    if up_positions is not None:
-        for up in up_positions:
-            up[0] = -up[0]
+        if up_positions:
+            image[2][0] = -image[2][0]
     return images, up_positions
 
 def flip_camera_y(images, up_positions=False):
@@ -217,6 +216,7 @@ def compute_focals(images):
 
     for image in images:
         position, rotation = image[1], image[2]
+        # position[1] = -position[1]
         # rotation[1] = -rotation[1]
         # rotation[2] = -rotation[2]
         focal_point = calculate_new_position(position, rotation, invert=False)

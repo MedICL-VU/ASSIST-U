@@ -35,8 +35,9 @@ def dir2vid(savedir, name):
     for image_file, depth_file, phantom_file in zip(image_files, depth_files, phantom_files):
         image = cv2.imread(image_file)
         depth = cv2.imread(depth_file)
-        image = cv2.rotate(image, cv2.ROTATE_180)
-        depth = cv2.rotate(depth, cv2.ROTATE_180)
+        # for RtoP, flip by 180
+        # image = cv2.rotate(image, cv2.ROTATE_180)
+        # depth = cv2.rotate(depth, cv2.ROTATE_180)
         # image = cv2.flip(image, 0)
         # depth = cv2.flip(depth, 0)
         # image = cv2.flip(image, 1)
@@ -54,5 +55,5 @@ def dir2vid(savedir, name):
     print(f"Video saved as '{output_video}'")
 
 if __name__ == "__main__":
-    dir2vid(savedir='../output/cpd_phantom1_a',
+    dir2vid(savedir='../output/cpd_phantom1_PtoRb',
             name='registered_phantom1')

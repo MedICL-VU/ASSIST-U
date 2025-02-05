@@ -114,7 +114,7 @@ def save_unity(id, coord, focal, savedir, modelname, rotation=None, up=None):
         rotationx = rotation[1]
         rotationy = rotation[2]
         rotationz = rotation[3]
-        send_command(f'RotateCameraQuat,{rotationw},{rotationx},{rotationy},{rotationz}')
+        send_command(f'RotateCameraQuat,{rotationw},{rotationx},{-rotationy},{rotationz}')
 
     elif up is not None:
         # print(f'RotateCameraLook,{focal[0]},{focal[1]},{focal[2]}, {up[0]},{up[1]},{up[2]}')
@@ -351,7 +351,68 @@ def render(params):
 
     return
 
-def render_registered_pair(params):
+def render_registered_pair_PtoR(params):
+    if not os.path.isdir(os.path.join(params['savedir'], params['modelname'])):
+        os.makedirs(os.path.join(params['savedir'], params['modelname']))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'render'))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'depth'))
+        os.makedirs(os.path.join(params['savedir'], params['modelname'], 'raw'))
+
+    # load phantom pcd
+    # recon_pcd, recon_mesh, recon_center = recon.load_mesh(params['recon_mesh'], recenter=True)
+    target_pcd, recon_center = recon.load_reconpoints(params['recon_pcd'], recenter=True)
+    # get center
+    # recon_center = recon_pcd.get_center()
+
+    # load camera positions
+    camera_poses = recon.load_images(params['recon_images'])
+    camera_poses = recon.calc_cam_center(camera_poses)
+    camera_poses = recon.adjust_image_center(camera_poses, recon_center)
+    camera_poses = recon.adjust_camera_scale(camera_poses, recon_center, scale=3.5)
+
+    # calc focalpoint
+    positions = recon.compute_focals(camera_poses)
+    # positions,_= recon.flip_camera_x(positions)
+    positions, _ = recon.flip_camera_y(positions)
+    method = 'rotations' # 'rotations' or 'focalup'
+
+    positions = sorted(positions, key=lambda x: x[3])
+    count = 0
+    pbar = tqdm(total=len(positions))
+    for coord, focalpoint, cam_rotate, name in positions[::100]:
+    # for coord, focalpoint, cam_rotate, name in [positions[9*100]]:
+    # for coord, focalpoint, cam_rotate, name in [positions[1050], positions[1100], positions[1600], positions[1849], positions[2049]]:
+        if params['renderer'] == 'unity' and params['save']:
+            # move camera here
+            # calculate rotation
+            # get dir
+            # save view
+            # print(f'Coord: {coord}')
+            # print(f'Focal: {focalpoint}')
+            # print(f'Rotat: {cam_rotate}')
+            # print(f'Provided Up: {cam_rotate-coord}')
+            # cam_rotate[1] = -cam_rotate[1]
+            print(name)
+            if method == 'rotations':
+                save_unity(name[:-4], coord, focalpoint, params['savedir'], params['modelname'], cam_rotate)
+            else:
+                save_unity(name[:-4], coord, focalpoint, params['savedir'], params['modelname'], up=cam_rotate)
+            pass
+
+        else:
+            save_vtk(name[:-4], coord, focalpoint, params['savedir'], params['modelpath'], params['modelname'], params['save'],
+                     cam_roll=cam_rotate[0])
+        count += 1
+        pbar.update(1)
+        # print("Press Enter to continue...")
+        # input()
+        # print("Continuing...")
+
+    # dir2vid(params['savedir'], params['modelname'])
+
+    return
+
+def render_registered_pair_RtoP(params):
     if not os.path.isdir(os.path.join(params['savedir'], params['modelname'])):
         os.makedirs(os.path.join(params['savedir'], params['modelname']))
         os.makedirs(os.path.join(params['savedir'], params['modelname'], 'render'))
@@ -412,8 +473,8 @@ def render_registered_pair(params):
     # for coord, focalpoint, cam_rotate, name in positions[1195:1200:]:
     # for coord, focalpoint, cam_rotate, name in positions[1849:1850:]:
     # for coord, focalpoint, cam_rotate, name in positions[2049:2050:]:
-    # for coord, focalpoint, cam_rotate, name in [positions[1198]]:
-    for coord, focalpoint, cam_rotate, name in positions[::]:
+    for coord, focalpoint, cam_rotate, name in [positions[1198]]:
+    # for coord, focalpoint, cam_rotate, name in positions[::100]:
     # for coord, focalpoint, cam_rotate, name in [positions[1050], positions[1100], positions[1600], positions[1849], positions[2049]]:
         if params['renderer'] == 'unity' and params['save']:
             # move camera here

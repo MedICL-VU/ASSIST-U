@@ -124,7 +124,8 @@ def video_render(params):
     renderVideo.render(params)
 
 def render_pairs(params):
-    renderVideo.render_registered_pair(params)
+    # renderVideo.render_registered_pair_PtoR(params) # for a transformed phantom and unmoved camera positions
+    renderVideo.render_registered_pair_RtoP(params) # for a transformed recon and camera positions
 
 if __name__ == '__main__':
 

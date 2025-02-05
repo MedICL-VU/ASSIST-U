@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument('--numpoints', default=1, type=int)
     parser.add_argument('--samplestep', default=0.1, type=float)
     parser.add_argument('--visualize', default=True, type=bool)
-    parser.add_argument('--savedir', default='output/cpd_phantom1_a', type=str)
+    parser.add_argument('--savedir', default='output/cpd_phantom1_PtoRc', type=str)
     parser.add_argument('--save', default=True, type=bool)
     parser.add_argument('--planmode', default='dfs', type=str) #bfs currently broken
     parser.add_argument('--modelname', default='registered_phantom1', type=str)
@@ -53,6 +53,6 @@ def parse_args():
     parser.add_argument('--recon_mesh', default='data/soft3slowwet/meshed-poisson.ply', type=str)
     parser.add_argument('--recon_pcd', default='data/soft3slowwet/points3D.txt', type=str)
     parser.add_argument('--recon_images', default='data/soft3slowwet/images.txt', type=str)
-
+    parser.add_argument('--phantom_mesh', default='data/phantom1/Patient1Right.stl', type=str)
     args = parser.parse_args()
     return args

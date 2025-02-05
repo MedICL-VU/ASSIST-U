@@ -99,17 +99,34 @@ public class CameraController : MonoBehaviour
             float x = float.Parse(parts[1]);
             float y = float.Parse(parts[2]);
             float z = float.Parse(parts[3]);
-            controlledCamera.transform.eulerAngles = new Vector3(x, y, z);
+            controlledCamera.transform.rotation = Quaternion.Euler(x, y, z);
         }
-        else if (parts[0] == "RotateCameraLook" && parts.Length == 4)
+        else if (parts[0] == "RotateCameraQuat" && parts.Length == 5)
         {
             // Rotation change command
-            float x = float.Parse(parts[1]);
-            float y = float.Parse(parts[2]);
-            float z = float.Parse(parts[3]);
-            Vector3 focalPoint = new Vector3(x, y, z);
+            float w = float.Parse(parts[1]);
+            float x = float.Parse(parts[2]);
+            float y = float.Parse(parts[3]);
+            float z = float.Parse(parts[4]);
+            controlledCamera.transform.rotation = new Quaternion(x, y, z, w);
+        }
+        else if (parts[0] == "RotateCameraLook" && parts.Length == 7)
+        {
+            // Rotation change command
+            float forwardx = float.Parse(parts[1]);
+            float forwardy = float.Parse(parts[2]);
+            float forwardz = float.Parse(parts[3]);
+            Vector3 focalPoint = new Vector3(forwardx, forwardy, forwardz);
+
+            float upx = float.Parse(parts[4]);
+            float upy = float.Parse(parts[5]);
+            float upz = float.Parse(parts[6]);
+            Vector3 upPoint = new Vector3(upx, upy, upz);
+
             Vector3 forwardDirection = focalPoint - transform.position;
-            Quaternion rotation = Quaternion.LookRotation(forwardDirection, Vector3.up);
+            Vector3 upDirection = upPoint - transform.position;
+
+            Quaternion rotation = Quaternion.LookRotation(forwardDirection, upDirection);
             
             transform.rotation = rotation;
         }
