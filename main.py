@@ -121,11 +121,12 @@ def video_render(params):
     # for name in params.models:
     #     params['modelname'] = name
     #     modelpath = os.path.join('data', '3dmodels', params['modelname'] + '.stl')
+    # params['modelpath'] = 'data/cao1_3_19_25.stl'
     renderVideo.render(params)
 
 def render_pairs(params):
-    # renderVideo.render_registered_pair_PtoR(params) # for a transformed phantom and unmoved camera positions
-    renderVideo.render_registered_pair_RtoP(params) # for a transformed recon and camera positions
+    renderVideo.render_registered_pair_PtoR(params) # for a transformed phantom and unmoved camera positions
+    # renderVideo.render_registered_pair_RtoP(params) # for a transformed recon and camera positions
 
 if __name__ == '__main__':
 
@@ -140,8 +141,8 @@ if __name__ == '__main__':
                    'arpah_decimated':  (-80.8254, -121.328, -1.2019)
                         }
 
-    # video_render(params)
-    render_pairs(params)
+    video_render(params)
+    # render_pairs(params)
 
     '''# Other functions for AVA
     # avgiou, avgdsc, _ = analyze(params)

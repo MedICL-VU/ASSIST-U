@@ -55,5 +55,5 @@ def dir2vid(savedir, name):
     print(f"Video saved as '{output_video}'")
 
 if __name__ == "__main__":
-    dir2vid(savedir='../output/cpd_phantom1_PtoRb',
+    dir2vid(savedir='../output/cpd_phantom1_PtoRChopped',
             name='registered_phantom1')

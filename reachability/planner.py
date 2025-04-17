@@ -129,7 +129,7 @@ def gen_positions(params):
     # dfs edge paths and place in order
     # assumes no loops
     path = organize_paths(start, edgelist, params)
-    path = smooth_path(path, midpoint_iterations=params['smoothing_subdivisions'], smoothing_iterations=params['smoothing_iter'])
+    # path = smooth_path(path, midpoint_iterations=params['smoothing_subdivisions'], smoothing_iterations=params['smoothing_iter'])
 
     if params['visualize']:
         mesh_o3d = o3d.io.read_triangle_mesh(modelpath)
@@ -186,8 +186,8 @@ def dfspath(path, edges, node, last, visited, globalbending, params):
         for successor in successors:
             successor_vector = vectorize(edges[successor][0], edges[successor][1])
 
-            if not np.linalg.norm(successor_vector) < 0.0000005 and angle(vectorize(v1, v2),
-                                                                          successor_vector) < globalbending:
+            if not np.linalg.norm(successor_vector) < 0.05: # and angle(vectorize(v1, v2),
+                                                                   #       successor_vector) < globalbending:
             # if not np.linalg.norm(successor_vector) < 0.0000005:
                 path = dfspath(path, edges, successor, node, visited, globalbending, params)
                 success_count +=1

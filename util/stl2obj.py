@@ -1,9 +1,9 @@
 import meshio
 
 
-mesh = meshio.read('../data/soft3slowwet/reverseReg2/phantom1_registered_reverse.stl')
+mesh = meshio.read('../data/cao1_3_19_25_model3.stl')
 
 # Flip the x-coordinates
 mesh.points[:, 0] = -mesh.points[:, 0]
 
-meshio.write('../data/soft3slowwet/reverseReg2/phantom1_registered_reverse.obj', mesh)
+meshio.write('../data/cao1_3_19_25_model3.obj', mesh)

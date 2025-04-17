@@ -78,7 +78,10 @@ def calc_cam_center(images):
 
     # coordinates of projection/camera center given by -R^t * T where R is rotation matrix, T is transpose (position)
     # [(id, cam center, rotation, camera_id, image_name), ...]
-    rotations = np.asarray([image[2] for image in images])
+    rotations = np.asarray([[image[2][0],
+                             image[2][1],
+                             image[2][2],
+                             image[2][3]] for image in images])
     rotation_matrices = get_rotation_matrices(rotations)
     positions = np.asarray([image[1] for image in images])
     # positions[:,1] = -positions[:,1]

@@ -41,11 +41,11 @@ def parse_args():
     parser.add_argument('--numpoints', default=1, type=int)
     parser.add_argument('--samplestep', default=0.1, type=float)
     parser.add_argument('--visualize', default=True, type=bool)
-    parser.add_argument('--savedir', default='output/cpd_phantom1_PtoRc', type=str)
+    parser.add_argument('--savedir', default='output/cao_test', type=str)
     parser.add_argument('--save', default=True, type=bool)
-    parser.add_argument('--planmode', default='dfs', type=str) #bfs currently broken
-    parser.add_argument('--modelname', default='registered_phantom1', type=str)
-    parser.add_argument('--modelpath', default='data/3dmodels/registered_phantom1.stl', type=str)
+    parser.add_argument('--planmode', default='bfs', type=str) #bfs currently broken
+    parser.add_argument('--modelname', default='cao', type=str)
+    parser.add_argument('--modelpath', default='data/cao1_3_19_25_model2.stl', type=str)
     parser.add_argument('--contract_mesh', action='store_true')
     parser.add_argument('--smoothing_subdivisions', default=2, type=int)
     parser.add_argument('--smoothing_iter', default=5, type=int)

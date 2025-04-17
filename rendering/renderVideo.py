@@ -128,6 +128,8 @@ def save_unity(id, coord, focal, savedir, modelname, rotation=None, up=None):
     send_command(f'Screenshot,{rendername},Normal')
     depthname = os.path.join(fpath, 'depth', id + '_dmap.png')
     send_command(f'Screenshot,{depthname},Depth')
+    rawname = os.path.join(fpath, 'raw', id + '_dmap.exr')
+    send_command(f'ScreenshotFull,{rawname},Depth')
 
 def save_vtk(id, coord, focal, savedir, modelpath, modelname, save, cam_roll=None):
     # string, tuple, tuple
@@ -342,10 +344,13 @@ def render(params):
             # calculate rotation
             # get dir
             # save view
+            # coord[1] = coord[1] + 2
+            # focalpoint[1] = focalpoint[1]+2
             save_unity(f'{count:05}', coord, focalpoint, params['savedir'], params['modelname'])
         else:
             save_vtk(f'{count:05}', coord, focalpoint, params['savedir'], params['modelpath'], params['modelname'], params['save'])
         count += 1
+        #break
 
     # dir2vid(params['savedir'], params['modelname'])
 
@@ -379,17 +384,17 @@ def render_registered_pair_PtoR(params):
     positions = sorted(positions, key=lambda x: x[3])
     count = 0
     pbar = tqdm(total=len(positions))
-    for coord, focalpoint, cam_rotate, name in positions[::100]:
-    # for coord, focalpoint, cam_rotate, name in [positions[9*100]]:
+    for coord, focalpoint, cam_rotate, name in positions[::]:
+    # for coord, focalpoint, cam_rotate, name in [positions[140]]:
     # for coord, focalpoint, cam_rotate, name in [positions[1050], positions[1100], positions[1600], positions[1849], positions[2049]]:
         if params['renderer'] == 'unity' and params['save']:
             # move camera here
             # calculate rotation
             # get dir
             # save view
-            # print(f'Coord: {coord}')
-            # print(f'Focal: {focalpoint}')
-            # print(f'Rotat: {cam_rotate}')
+            print(f'Coord: {coord}')
+            print(f'Focal: {focalpoint}')
+            print(f'Rotat: {cam_rotate}')
             # print(f'Provided Up: {cam_rotate-coord}')
             # cam_rotate[1] = -cam_rotate[1]
             print(name)
@@ -405,7 +410,7 @@ def render_registered_pair_PtoR(params):
         count += 1
         pbar.update(1)
         # print("Press Enter to continue...")
-        # input()
+        input()
         # print("Continuing...")
 
     # dir2vid(params['savedir'], params['modelname'])
