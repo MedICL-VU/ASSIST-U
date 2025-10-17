@@ -82,3 +82,5 @@ For quality of life, we added the reset-transform and provided a tissuecam and t
 
 A ResetTransform script is also provided to quickly reset the position and rotation of any object in the scene. This can be added to any object by selecting the object and pressing Add Component in the inspector. Search for ResetTransform and add it. When the scene is running, select the object and press R to reset its transform.
 
+For additional control over the camera, the Unity Asset Store has a several packages that can be imported to allow for mouse and keyboard control of the camera when the scene is running. The CameraOperate script was imported from the H4CameraOperate package. This package was modified to work with our setup and allow for easier camera movement when the scene is running. Similar packages can be added to quickly extend boilerplate functionality.
+

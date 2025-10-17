@@ -141,8 +141,8 @@ if __name__ == '__main__':
                    'arpah_decimated':  (-80.8254, -121.328, -1.2019)
                         }
 
-    # video_render(params)
-    render_pairs(params)
+    video_render(params)
+    # render_pairs(params)
 
     '''# Other functions for AVA
     # avgiou, avgdsc, _ = analyze(params)
