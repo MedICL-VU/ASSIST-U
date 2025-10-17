@@ -385,8 +385,9 @@ def render_registered_pair_PtoR(params):
     count = 0
     pbar = tqdm(total=len(positions))
     for coord, focalpoint, cam_rotate, name in positions[::]:
-    # for coord, focalpoint, cam_rotate, name in [positions[140]]:
-    # for coord, focalpoint, cam_rotate, name in [positions[1050], positions[1100], positions[1600], positions[1849], positions[2049]]:
+    # for coord, focalpoint, cam_rotate, name in positions[1000:1500:]:
+    # for coord, focalpoint, cam_rotate, name in [positions[0]]:
+    # for coord, focalpoint, cam_rotate, name in [positions[50],positions[1050], positions[1100], positions[1600], positions[1849], positions[2049], positions[3000]]:
         if params['renderer'] == 'unity' and params['save']:
             # move camera here
             # calculate rotation
@@ -410,7 +411,7 @@ def render_registered_pair_PtoR(params):
         count += 1
         pbar.update(1)
         # print("Press Enter to continue...")
-        input()
+        # input()
         # print("Continuing...")
 
     # dir2vid(params['savedir'], params['modelname'])
@@ -455,7 +456,7 @@ def render_registered_pair_RtoP(params):
     method = 'focalup' # 'rotations' or 'focalup'
     if method == 'rotations':
         positions = recon.update_focals(positions, registered_focals)
-        positions, registered_up = recon.flip_camera_y(positions)
+        # positions, registered_up = recon.flip_camera_y(positions)
     else:
         positions = recon.update_focals(positions, registered_focals, up=registered_up)
         positions, registered_up = recon.flip_camera_y(positions, up_positions=True)
@@ -507,7 +508,7 @@ def render_registered_pair_RtoP(params):
         count += 1
         pbar.update(1)
         # print("Press Enter to continue...")
-        # input()
+        input()
         # print("Continuing...")
 
     # dir2vid(params['savedir'], params['modelname'])

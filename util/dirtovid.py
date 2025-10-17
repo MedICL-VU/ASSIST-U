@@ -5,8 +5,9 @@ from tqdm import tqdm
 def dir2vid(savedir, name):
     # Path to the folder containing the images
     image_folder = f'{savedir}/{name}/render/'
+    img_ext = '.jpg'
     depth_folder = f'{savedir}/{name}/depth/'
-    phantom_folder = f'../output/phantom/'
+    phantom_folder = f'{savedir}/{name}/images'
 
     # Output video file name
     output_video = f'{savedir}/{name}.mp4'
@@ -17,7 +18,7 @@ def dir2vid(savedir, name):
     # Get the list of image files in the folder and sort them alphabetically
     image_files = sorted([os.path.join(image_folder, file) for file in os.listdir(image_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))])
     depth_files = sorted([os.path.join(depth_folder, file) for file in os.listdir(depth_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))])
-    phantom_files = sorted([os.path.join(phantom_folder, file[:-11] + file[-4:]) for file in os.listdir(image_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))])
+    phantom_files = sorted([os.path.join(phantom_folder, file[:-11] + img_ext) for file in os.listdir(image_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))])
 
     if not image_files:
         print("No image files found in the folder.")
@@ -55,5 +56,5 @@ def dir2vid(savedir, name):
     print(f"Video saved as '{output_video}'")
 
 if __name__ == "__main__":
-    dir2vid(savedir='../output/cpd_phantom1_PtoRChopped',
-            name='registered_phantom1')
+    dir2vid(savedir='../output/mdephantom',
+            name='31R')

@@ -172,7 +172,7 @@ def rotate_vector_by_quaternion(vector, rotation, invert= False):
     # Convert the quaternion result back to a vector (ignore the real part)
     return quaternion.as_float_array(rotated_vector_quat)[1:]
 
-def calculate_new_position(position, rotation_quaternion, direction_vector=np.array([0, 0, 0.25]), invert=False):
+def calculate_new_position(position, rotation_quaternion, direction_vector=np.array([0, 1, 0]), invert=False):
     # Rotate the direction vector by the quaternion
     rotated_vector = rotate_vector_by_quaternion(direction_vector, rotation_quaternion, invert)
     # Calculate new position by adding the rotated vector to the original position
@@ -227,7 +227,7 @@ def compute_focals(images):
         #https://github.com/colmap/colmap/issues/1376
         #colmap (x,y,z,x°,y°,z°) = unity (x,-y,z,-x°,-y°,z°)
         # roll, pitch, yaw = extract_euler_angles_from_quaternion(rotation, invert=False)
-        name = image[4].split('/')[1]
+        name = image[4].split('/')[-1]
         positions.append((position, focal_point, rotation, name))
     return positions
 
